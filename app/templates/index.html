@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparateur Indépendant d'Offres Touristiques</title>
+    <!-- Tailwind CSS pour un design moderne, épuré et responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <!-- Alpine.js pour la réactivité fluide -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Script d'application -->
+    <script src="/static/js/app.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans" x-data="comparatorApp()">
+
+    <!-- Header Professionnel & Neutre -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-teal-500 flex items-center justify-center text-white shadow-md font-bold text-lg">
+                    ✈
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        Comparateur d'Offres Touristiques
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200 font-medium">Audit Indépendant</span>
+                    </h1>
+                    <p class="text-xs text-slate-500">Outil de décision pour voyageurs & conseillers en voyages • Traçabilité certifiée</p>
+                </div>
+            </div>
+
+            <!-- Fil d'Ariane des étapes -->
+            <nav class="flex items-center space-x-2 text-xs font-semibold">
+                <button @click="step = 1" :class="step === 1 ? 'bg-brand-50 text-brand-700 border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="px-3 py-1.5 rounded-lg border transition">
+                    1. Type de voyage
+                </button>
+                <span class="text-slate-300">→</span>
+                <button @click="step = 2" :class="step === 2 ? 'bg-brand-50 text-brand-700 border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="px-3 py-1.5 rounded-lg border transition">
+                    2. Offres & Contrôle (<span x-text="offers.length"></span>)
+                </button>
+                <span class="text-slate-300">→</span>
+                <button @click="if (comparisonResult) step = 3" :disabled="!comparisonResult" :class="step === 3 ? 'bg-brand-50 text-brand-700 border-brand-500' : (comparisonResult ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed')" class="px-3 py-1.5 rounded-lg border transition">
+                    3. Rapport & Synthèse
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Zone de notifications / Alertes -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full no-print" x-show="errorMessage || successMessage">
+        <div x-show="errorMessage" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-3 flex items-start justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-red-500 font-bold text-lg">⚠️</span>
+                <p class="text-sm text-red-700 font-medium" x-text="errorMessage"></p>
+            </div>
+            <button @click="errorMessage = ''" class="text-red-400 hover:text-red-700 text-sm font-bold">×</button>
+        </div>
+        <div x-show="successMessage" class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg shadow-sm mb-3 flex items-start justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-emerald-500 font-bold text-lg">✓</span>
+                <p class="text-sm text-emerald-800 font-medium" x-text="successMessage"></p>
+            </div>
+            <button @click="successMessage = ''" class="text-emerald-400 hover:text-emerald-700 text-sm font-bold">×</button>
+        </div>
+    </div>
+
+    <!-- Conteneur Principal -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+
+        <!-- ========================================== -->
+        <!-- ÉTAPE 1 : CHOIX DU TYPE DE VOYAGE PRÉVU    -->
+        <!-- ========================================== -->
+        <section x-show="step === 1" class="transition-smooth">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 mb-8">
+                <div class="max-w-3xl mb-8">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">Étape préliminaire obligatoire</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3">Quel type de voyage envisagez-vous ?</h2>
+                    <p class="text-slate-600 mt-2 text-sm sm:text-base leading-relaxed">
+                        Le comparateur adapte automatiquement sa grille d'évaluation, l'analyse de l'emplacement des hébergements et ses recommandations en fonction des priorités réelles de votre projet.
+                    </p>
+                </div>
+
+                <!-- Grille des 5 types de voyage -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="t in travelTypes" :key="t.id">
+                        <div @click="selectTravelType(t.id)" 
+                             :class="travelType === t.id ? 'border-brand-600 ring-2 ring-brand-500/20 bg-brand-50/30' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'"
+                             class="rounded-xl border p-5 cursor-pointer transition flex flex-col justify-between group shadow-sm hover:shadow">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-lg font-bold text-slate-900 group-hover:text-brand-700 transition" x-text="t.title"></h3>
+                                    <span :class="travelType === t.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700'" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition">
+                                        ✓
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-600 mb-4 leading-relaxed" x-text="t.desc"></p>
+                            </div>
+                            <div class="pt-3 border-t border-slate-100">
+                                <span class="text-[11px] font-semibold text-brand-800 bg-brand-100/60 px-2 py-0.5 rounded" x-text="t.badge"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button @click="step = 2" class="bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm px-6 py-3 rounded-xl shadow transition flex items-center gap-2">
+                        Poursuivre vers l'ajout des offres →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- ÉTAPE 2 : GESTION DES OFFRES & VÉRIFICATION / CORRECTION -->
+        <!-- ======================================================== -->
+        <section x-show="step === 2" class="transition-smooth">
+            
+            <!-- Bandeau de configuration & type choisi -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs text-slate-500 uppercase font-semibold">Type de voyage actif :</span>
+                    <span class="bg-brand-700 text-white font-bold text-xs uppercase px-3 py-1 rounded-full" x-text="travelType"></span>
+                    <button @click="step = 1" class="text-xs text-brand-700 hover:underline font-medium">Modifier le type</button>
+                </div>
+
+                <!-- Raccourcis de démonstration rapide -->
+                <div class="flex items-center flex-wrap gap-2 text-xs">
+                    <span class="text-slate-500 font-medium">Échantillons prêts à comparer :</span>
+                    <button @click="loadSampleOffers(travelType, true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300 font-medium transition">
+                        🔄 Charger 2 offres réalistes (<span x-text="travelType"></span>)
+                    </button>
+                    <button @click="loadSampleInvalidOffer()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-1 rounded border border-amber-300 font-medium transition" title="Teste la détection d'une offre ne comprenant pas d'hébergement ou moins de 2 prestations">
+                        ⚠️ Tester offre non conforme
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modalités d'ajout d'offres : Fichier, Lien Web ou Manuel -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                
+                <!-- 1. Déposer un fichier (PDF, Word, Excel) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                            <span class="text-base text-brand-700">📄</span>
+                            <span>Importer un fichier</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-3">Accepte les formats <strong>PDF, Word (.docx) et Excel (.xlsx)</strong>. Contenu traité comme données pures.</p>
+                        
+                        <label class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/30 rounded-lg p-3 text-center cursor-pointer block transition">
+                            <span class="text-xs font-semibold text-slate-700" x-show="!uploading">Choisir ou glisser un fichier</span>
+                            <span class="text-xs font-semibold text-brand-700" x-show="uploading">Extraction en cours...</span>
+                            <input type="file" @change="handleFileUpload($event)" accept=".pdf,.docx,.xlsx,.doc,.xls" class="hidden">
+                        </label>
+                    </div>
+
+                    <!-- Télécharger des exemples réels de test -->
+                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        <span>Fichiers de test disponibles : </span>
+                        <a href="/static/samples/offre_andalousie_culture.pdf" download class="text-brand-700 underline font-medium mr-1">PDF</a>|
+                        <a href="/static/samples/offre_maroc_imperiale.docx" download class="text-brand-700 underline font-medium mx-1">Word</a>|
+                        <a href="/static/samples/devis_madere_nature.xlsx" download class="text-brand-700 underline font-medium ml-1">Excel</a>
+                    </div>
+                </div>
+
+                <!-- 2. Importer une page Web via URL -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                            <span class="text-base text-brand-700">🔗</span>
+                            <span>Importer un lien Internet</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-3">Extraction sécurisée depuis l'adresse Web d'un voyagiste ou d'une agence (protection SSRF).</p>
+                        
+                        <div class="flex gap-2">
+                            <input type="url" x-model="urlInput" placeholder="https://exemple.com/sejour..." class="flex-grow text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                            <button @click="extractFromUrl()" :disabled="loading || !urlInput.trim()" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                Extraire
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-400">
+                        Les textes sont assainis et structurés sans exécution d'instructions.
+                    </div>
+                </div>
+
+                <!-- 3. Formulaire manuel / Offre vierge -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                            <span class="text-base text-brand-700">✍️</span>
+                            <span>Ajout manuel structuré</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-3">Créez une offre personnalisée vierge à remplir via les formulaires ci-dessous.</p>
+                        
+                        <button @click="addManualOffer()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                            <span>+ Ajouter une offre manuelle</span>
+                        </button>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        Total actuel : <strong x-text="offers.length"></strong> offre(s) dans le comparateur
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglets de sélection des offres à vérifier / corriger -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                
+                <div class="border-b border-slate-200 bg-slate-50/70 px-4 sm:px-6 pt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+                        <template x-for="(offer, idx) in offers" :key="offer.id">
+                            <div class="flex items-center">
+                                <button @click="activeTabOfferIndex = idx" 
+                                        :class="activeTabOfferIndex === idx ? 'bg-white text-brand-800 border-slate-200 border-b-white font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900 border-transparent font-medium'"
+                                        class="px-4 py-2 text-xs sm:text-sm rounded-t-lg border border-b-0 transition flex items-center space-x-2">
+                                    <span class="w-2 h-2 rounded-full" :class="offer.conforme_criteres ? 'bg-emerald-500' : 'bg-red-500'"></span>
+                                    <span x-text="`Offre ${idx+1} : ${offer.titre.substring(0, 25)}...`"></span>
+                                </button>
+                                <button @click="removeOffer(idx)" x-show="offers.length > 1" class="text-slate-400 hover:text-red-600 px-1 py-1 text-xs" title="Supprimer cette offre">✕</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="pb-2">
+                        <button @click="triggerComparison()" :disabled="offers.length < 2" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-40 text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-xl shadow transition flex items-center gap-2">
+                            <span>Comparer les <span x-text="offers.length"></span> offres côte à côte →</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenu de l'offre sélectionnée : Contrôle & Correction -->
+                <div class="p-6 sm:p-8" x-show="offers.length > 0 && offers[activeTabOfferIndex]">
+                    <template x-if="offers[activeTabOfferIndex]">
+                        <div x-data="{ currentOffer: offers[activeTabOfferIndex] }">
+                            
+                            <!-- 1. Alerte de conformité (Règle métier obligatoire) -->
+                            <div x-show="!currentOffer.conforme_criteres" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                                <div class="flex items-start space-x-3">
+                                    <span class="text-red-600 font-bold text-xl">⚠️</span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-red-900">Offre non conforme aux critères obligatoires :</h4>
+                                        <ul class="text-xs text-red-800 mt-1 list-disc list-inside space-y-0.5">
+                                            <template x-for="err in currentOffer.erreurs_conformite" :key="err">
+                                                <li x-text="err"></li>
+                                            </template>
+                                        </ul>
+                                        <p class="text-[11px] text-red-700 mt-2">
+                                            Rappel : le comparateur exige au minimum deux prestations distinctes, dont impérativement un hébergement. Corrigez les champs ci-dessous pour rendre cette offre éligible.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="currentOffer.conforme_criteres" class="mb-6 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg flex items-center justify-between text-xs text-emerald-800">
+                                <div>
+                                    <strong>✓ Offre conforme aux critères d'éligibilité :</strong> <span x-text="currentOffer.nombre_prestations_incluses"></span> prestations identifiées avec hébergement garanti.
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-semibold text-[10px]">Éligible à l'analyse</span>
+                            </div>
+
+                            <!-- Informations Générales & Traçabilité -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-slate-50/80 rounded-xl border border-slate-200">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titre de l'offre</label>
+                                    <input type="text" x-model="currentOffer.titre" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-brand-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Source / Traçabilité</label>
+                                    <div class="text-xs bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-between">
+                                        <span class="text-slate-600 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
+                                        <span class="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grille des Sections de Données avec Badges de Source et Correction -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                
+                                <!-- Bloc 1 : Dates & Prix Normalisé -->
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <span>💶</span> Dates, Durée & Conditions Financières
+                                        </h4>
+                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur + Calculs</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-3 mb-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Jours</label>
+                                            <input type="number" x-model="currentOffer.duree_jours" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Nuits</label>
+                                            <input type="number" x-model="currentOffer.duree_nuits" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Voyageurs</label>
+                                            <input type="number" x-model="currentOffer.prix.nombre_personnes" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-3 mb-4 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Prix annoncé (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.prix_total_annonce" @input="recalculatePrices(currentOffer)" class="w-full font-bold text-slate-900 border border-slate-300 rounded p-1.5">
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Taxes de séjour (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.taxes_sejour_estimees" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Frais dossier (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.frais_dossier" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                    </div>
+
+                                    <!-- Synthèse normalisée -->
+                                    <div class="bg-brand-50/50 border border-brand-100 rounded-lg p-3 grid grid-cols-3 gap-2 text-center text-xs">
+                                        <div>
+                                            <span class="text-[10px] text-slate-500 block">Total normalisé</span>
+                                            <span class="font-extrabold text-slate-900" x-text="currentOffer.prix.prix_total_normalise + ' €'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] text-slate-500 block">Prix / personne</span>
+                                            <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne + ' €'"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-[10px] text-slate-500 block">Prix / pers. / nuit</span>
+                                            <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne_par_nuit + ' €/n'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bloc 2 : Transport & Trajet en avion -->
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <span>🛫</span> Transport & Vol
+                                        </h4>
+                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Statut prestation</label>
+                                            <select x-model="currentOffer.transport.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5 font-semibold">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Type de vol</label>
+                                            <select x-model="currentOffer.transport.vol_direct" class="w-full border border-slate-300 rounded p-1.5">
+                                                <option :value="true">Vol direct</option>
+                                                <option :value="false">Avec escale(s)</option>
+                                                <option :value="null">Non précisé / Sans vol</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 text-xs">
+                                        <label class="block font-medium text-slate-600 mb-1">Compagnie aérienne</label>
+                                        <input type="text" x-model="currentOffer.transport.compagnie_aerienne" class="w-full border border-slate-300 rounded p-1.5 mb-1.5">
+                                        <label class="inline-flex items-center text-slate-600 text-[11px]">
+                                            <input type="checkbox" x-model="currentOffer.transport.compagnie_nommee_clairement" class="rounded mr-1.5 text-brand-600">
+                                            Compagnie clairement nommée et garantie au contrat
+                                        </label>
+                                    </div>
+
+                                    <div class="text-xs">
+                                        <label class="block font-medium text-slate-600 mb-1">Détails transport</label>
+                                        <input type="text" x-model="currentOffer.transport.details" class="w-full border border-slate-300 rounded p-1.5">
+                                    </div>
+                                </div>
+
+                                <!-- Bloc 3 : Hébergement (Critère Obligatoire) -->
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm" :class="!currentOffer.contient_hebergement ? 'ring-2 ring-red-400' : ''">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <span>🏨</span> Hébergement (Obligatoire)
+                                        </h4>
+                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Données Vendeur & Audit</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Statut hébergement</label>
+                                            <select x-model="currentOffer.hebergement.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5 font-semibold">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent (Non conforme)</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Standing / Catégorie</label>
+                                            <input type="text" x-model="currentOffer.hebergement.standing" class="w-full border border-slate-300 rounded p-1.5" placeholder="ex: 4 étoiles">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3 text-xs">
+                                        <label class="block font-medium text-slate-600 mb-1">Nom de l'hébergement</label>
+                                        <input type="text" x-model="currentOffer.hebergement.nom" class="w-full border border-slate-300 rounded p-1.5 font-bold">
+                                    </div>
+
+                                    <div class="mb-3 text-xs">
+                                        <label class="block font-medium text-slate-600 mb-1">Adresse / Localisation géographique</label>
+                                        <input type="text" x-model="currentOffer.hebergement.adresse" class="w-full border border-slate-300 rounded p-1.5">
+                                    </div>
+
+                                    <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs">
+                                        <div class="flex items-center justify-between text-[11px] mb-1">
+                                            <span class="font-semibold text-slate-700">Avis vérifiés de l'hébergement :</span>
+                                            <span class="text-[10px] text-slate-500 italic" x-text="currentOffer.hebergement.avis_source"></span>
+                                        </div>
+                                        <div class="flex items-center gap-3 text-xs" x-show="currentOffer.hebergement.avis_verifie">
+                                            <span class="font-bold text-amber-600">⭐ <span x-text="currentOffer.hebergement.avis_note"></span>/5</span>
+                                            <span class="text-slate-600">(<span x-text="currentOffer.hebergement.avis_nombre"></span> avis certifiés)</span>
+                                            <span class="text-[11px] text-slate-500" x-text="currentOffer.hebergement.avis_date_recents"></span>
+                                        </div>
+                                        <div x-show="!currentOffer.hebergement.avis_verifie" class="text-slate-500 text-[11px] italic">
+                                            Avis externes non vérifiés (aucune plateforme tierce interrogée).
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bloc 4 : Restauration, Visites, Guide, Assurance -->
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <span>🍽️</span> Restauration & Prestations Associées
+                                        </h4>
+                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                    </div>
+
+                                    <!-- Restauration -->
+                                    <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Restauration (Statut)</label>
+                                            <select x-model="currentOffer.restauration.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Formule de repas</label>
+                                            <select x-model="currentOffer.restauration.formule" class="w-full border border-slate-300 rounded p-1.5 font-semibold">
+                                                <option value="Bed and Breakfast">Bed and Breakfast</option>
+                                                <option value="Half Board">Half Board (Demi-pension)</option>
+                                                <option value="Full Board">Full Board (Pension complète)</option>
+                                                <option value="All Inclusive">All Inclusive (Tout compris)</option>
+                                                <option value="Sans repas">Sans repas</option>
+                                                <option value="Non précisé">Non précisé</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activités & Billets -->
+                                    <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Visites / Activités</label>
+                                            <select x-model="currentOffer.activites.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-center pt-5">
+                                            <label class="inline-flex items-center text-slate-700 text-xs">
+                                                <input type="checkbox" x-model="currentOffer.activites.billets_inclus" class="rounded mr-1.5 text-brand-600">
+                                                Billets / Entrées musées inclus
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Guide & Assurance -->
+                                    <div class="grid grid-cols-2 gap-3 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Guide / Accompagnateur</label>
+                                            <select x-model="currentOffer.guide.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Assurance Voyage</label>
+                                            <select x-model="currentOffer.assurance.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                                <option value="inclus">Inclus</option>
+                                                <option value="en_supplement">En supplément</option>
+                                                <option value="absent">Absent</option>
+                                                <option value="non_precise">Non précisé</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bloc 5 : Annulation & Fiabilité de l'Organisateur -->
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm lg:col-span-2">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                            <span>🛡️</span> Conditions d'Annulation & Identité du Vendeur
+                                        </h4>
+                                        <span class="text-[10px] badge-source-externe px-2 py-0.5 rounded font-semibold">Exigence de Neutralité</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Flexibilité d'annulation</label>
+                                            <select x-model="currentOffer.annulation.flexibilite" class="w-full border border-slate-300 rounded p-1.5 mb-2 font-semibold">
+                                                <option value="Très flexible">Très flexible (Remboursable)</option>
+                                                <option value="Modérée">Modérée (Frais échelonnés)</option>
+                                                <option value="Stricte">Stricte (Non remboursable)</option>
+                                                <option value="Non précisé">Non précisé</option>
+                                            </select>
+                                            <input type="text" x-model="currentOffer.annulation.conditions_detaillees" placeholder="Détail des conditions..." class="w-full border border-slate-300 rounded p-1.5 text-slate-700">
+                                        </div>
+
+                                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <label class="block font-medium text-slate-700 mb-1">Organisateur / Vendeur identifié</label>
+                                            <input type="text" x-model="currentOffer.vendeur.nom" class="w-full border border-slate-300 rounded p-1.5 mb-2 font-bold bg-white">
+                                            <p class="text-[11px] text-slate-600 leading-relaxed" x-text="currentOffer.vendeur.fiabilite_explication"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer de l'Étape 2 avec bouton d'action -->
+                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <button @click="step = 1" class="text-xs font-semibold text-slate-600 hover:text-slate-900">
+                        ← Retour au choix du type
+                    </button>
+                    <button @click="triggerComparison()" :disabled="offers.length < 2 || loading" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white font-bold text-sm px-7 py-3 rounded-xl shadow transition flex items-center gap-2">
+                        <span x-show="!loading">Lancer l'analyse comparative détaillée →</span>
+                        <span x-show="loading">Calcul de la comparaison en cours...</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- ÉTAPE 3 : RAPPORT COMPARATIF & SYNTHÈSE DÉCISIONNELLE    -->
+        <!-- ======================================================== -->
+        <section x-show="step === 3 && comparisonResult" class="transition-smooth">
+            
+            <!-- Barre d'actions du rapport -->
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
+                <button @click="step = 2" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition">
+                    ← Modifier ou corriger les offres
+                </button>
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs text-slate-500 font-medium">Voyage : <strong class="uppercase text-slate-900" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
+                    <button @click="printReport()" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                        <span>🖨️ Imprimer / Export PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alertes de non-conformité dans le rapport si nécessaire -->
+            <div x-show="comparisonResult && comparisonResult.avertissements_conformite.length > 0" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                <h4 class="text-sm font-bold text-red-900 mb-1">Mises en garde de conformité détectées :</h4>
+                <ul class="text-xs text-red-800 space-y-1 list-disc list-inside">
+                    <template x-for="warn in comparisonResult ? comparisonResult.avertissements_conformite : []" :key="warn">
+                        <li x-text="warn"></li>
+                    </template>
+                </ul>
+            </div>
+
+            <!-- 1. Synthèse Argumentée & Recommandation Motivée -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-8 card-print">
+                <div class="flex flex-wrap items-center justify-between pb-4 mb-5 border-b border-slate-100 gap-3">
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
+                            Synthèse Stratégique Indépendante
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+                            Analyse Décisionnelle pour un Voyage <span class="capitalize text-brand-700" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></span>
+                        </h2>
+                    </div>
+                    <div class="bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 text-right">
+                        <span class="text-[10px] text-brand-700 font-semibold block uppercase">Verdict Comparateur</span>
+                        <span class="text-sm font-extrabold text-brand-900" x-text="comparisonResult ? comparisonResult.recommandation_principale : ''"></span>
+                    </div>
+                </div>
+
+                <!-- Texte de synthèse -->
+                <div class="prose prose-slate max-w-none text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 mb-6 bg-slate-50/70 p-4 rounded-xl border border-slate-200"
+                     x-html="comparisonResult ? comparisonResult.synthese_argumentee.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n\n/g, '<br><br>') : ''">
+                </div>
+
+                <!-- Justification de la recommandation -->
+                <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-2">Motifs de la sélection :</h3>
+                    <div class="text-xs sm:text-sm text-emerald-900 space-y-1"
+                         x-html="comparisonResult ? comparisonResult.justification_recommandation.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') : ''">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Transparence du Score : Pondérations Personnalisables & Mesure de l'Incertitude -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 card-print">
+                <div class="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-slate-100 gap-3">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>⚖️</span> Grille de Scoring Transparent & Pondérations Ajustables
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Modifiez les curseurs pour adapter les coefficients selon vos priorités. Les scores et incertitudes se recalculent en temps réel.
+                        </p>
+                    </div>
+                    <span class="text-[10px] badge-source-deduction px-2 py-0.5 rounded font-semibold">Critères & Données Manquantes Visibles</span>
+                </div>
+
+                <!-- Sliders de pondération -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Prix / Budget : <span x-text="weights.poids_prix"></span>%
+                        </label>
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prix" @input="updateWeights()" class="w-full accent-brand-600">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Hébergement : <span x-text="weights.poids_hebergement"></span>%
+                        </label>
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_hebergement" @input="updateWeights()" class="w-full accent-brand-600">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Annulation : <span x-text="weights.poids_annulation"></span>%
+                        </label>
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_annulation" @input="updateWeights()" class="w-full accent-brand-600">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Prestations : <span x-text="weights.poids_prestations"></span>%
+                        </label>
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prestations" @input="updateWeights()" class="w-full accent-brand-600">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                            Fiabilité / Avis : <span x-text="weights.poids_fiabilite"></span>%
+                        </label>
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_fiabilite" @input="updateWeights()" class="w-full accent-brand-600">
+                    </div>
+                </div>
+
+                <!-- Tableau des scores avec taux de complétude et incertitudes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <template x-for="offer in (comparisonResult ? comparisonResult.offres : [])" :key="offer.id">
+                        <div class="bg-white border rounded-xl p-4 shadow-sm flex flex-col justify-between"
+                             :class="comparisonResult.scores[offer.id].score_global >= 75 ? 'border-brand-300 ring-1 ring-brand-300' : 'border-slate-200'">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-xs font-bold text-slate-900 truncate" x-text="offer.titre"></h4>
+                                    <div class="bg-brand-700 text-white font-extrabold text-sm px-2.5 py-0.5 rounded-lg shadow-sm">
+                                        <span x-text="comparisonResult.scores[offer.id].score_global"></span><span class="text-[10px] font-normal">/100</span>
+                                    </div>
+                                </div>
+
+                                <!-- Décomposition des sous-scores -->
+                                <div class="space-y-1.5 text-[11px] text-slate-600 mb-4">
+                                    <div class="flex justify-between">
+                                        <span>Indice Prix :</span>
+                                        <strong x-text="comparisonResult.scores[offer.id].score_prix + '/100'"></strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Confort Hébergement :</span>
+                                        <strong x-text="comparisonResult.scores[offer.id].score_hebergement + '/100'"></strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Sécurité Annulation :</span>
+                                        <strong x-text="comparisonResult.scores[offer.id].score_annulation + '/100'"></strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Richesse Prestations :</span>
+                                        <strong x-text="comparisonResult.scores[offer.id].score_prestations + '/100'"></strong>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Fiabilité Données :</span>
+                                        <strong x-text="comparisonResult.scores[offer.id].score_fiabilite + '/100'"></strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Indice de complétude et données manquantes (Transparence de l'incertitude) -->
+                            <div class="pt-3 border-t border-slate-100">
+                                <div class="flex items-center justify-between text-[11px] mb-1">
+                                    <span class="font-semibold text-slate-700">Complétude factuelle :</span>
+                                    <span class="font-bold text-xs" :class="comparisonResult.scores[offer.id].completude_donnees_pct >= 80 ? 'text-emerald-700' : 'text-amber-700'" x-text="comparisonResult.scores[offer.id].completude_donnees_pct + '%'"></span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-1.5 mb-2">
+                                    <div class="h-1.5 rounded-full" :class="comparisonResult.scores[offer.id].completude_donnees_pct >= 80 ? 'bg-emerald-500' : 'bg-amber-500'" :style="`width: ${comparisonResult.scores[offer.id].completude_donnees_pct}%`"></div>
+                                </div>
+                                
+                                <div x-show="comparisonResult.scores[offer.id].donnees_manquantes.length > 0">
+                                    <span class="text-[10px] font-bold text-amber-900 block mb-0.5">⚠️ Éléments non confirmés :</span>
+                                    <ul class="text-[10px] text-amber-800 list-disc list-inside space-y-0.5">
+                                        <template x-for="item in comparisonResult.scores[offer.id].donnees_manquantes.slice(0, 3)" :key="item">
+                                            <li x-text="item"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- 3. Matrice des Écarts de Périmètre Contractuel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 card-print" x-show="comparisonResult && comparisonResult.ecarts_perimetre.length > 0">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>🔍</span> Différences de Périmètre Entre les Offres
+                    </h3>
+                    <span class="text-xs text-slate-500">Mise en évidence des inclusions et suppléments</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+                                <th class="p-3">Prestation</th>
+                                <th class="p-3">Offre A</th>
+                                <th class="p-3">Offre B</th>
+                                <th class="p-3">Impact Financier ou Confort</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <template x-for="diff in (comparisonResult ? comparisonResult.ecarts_perimetre : [])" :key="diff.prestation">
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="p-3 font-bold text-slate-900 whitespace-nowrap" x-text="diff.prestation"></td>
+                                    <td class="p-3 text-slate-700" x-text="diff.status_offre_a"></td>
+                                    <td class="p-3 text-slate-700" x-text="diff.status_offre_b"></td>
+                                    <td class="p-3 text-slate-500 italic" x-text="diff.impact"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. Tableau Comparatif Côte à Côte Exhaustif -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 overflow-hidden card-print">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>📊</span> Tableau Comparatif Côte à Côte Rigoureux
+                    </h3>
+                    <div class="flex gap-2 text-[10px]">
+                        <span class="px-2 py-0.5 rounded badge-inclus font-semibold">Inclus</span>
+                        <span class="px-2 py-0.5 rounded badge-en_supplement font-semibold">En supplément</span>
+                        <span class="px-2 py-0.5 rounded badge-absent font-semibold">Absent</span>
+                        <span class="px-2 py-0.5 rounded badge-non_precise font-semibold">Non précisé</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse border border-slate-200">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200">
+                                <th class="p-3.5 font-bold text-slate-700 w-1/4">Critère Analysé</th>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <th class="p-3.5 font-black text-slate-900 border-l border-slate-200 w-1/3">
+                                        <div x-text="off.titre"></div>
+                                        <div class="text-[10px] font-normal text-slate-500 mt-0.5" x-text="off.source_reference"></div>
+                                    </th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            
+                            <!-- Prix normalisé -->
+                            <tr class="bg-slate-50/50">
+                                <td class="p-3 font-bold text-slate-900">Prix & Normalisation</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <div class="text-sm font-extrabold text-brand-900" x-text="off.prix.prix_total_normalise + ' € total'"></div>
+                                        <div class="text-[11px] text-slate-600 font-semibold" x-text="off.prix.prix_par_personne + ' € / pers (' + off.prix.prix_par_personne_par_nuit + ' € / nuit)'"></div>
+                                        <div class="text-[10px] text-slate-500 mt-1">
+                                            Taxes : <span x-text="off.prix.taxes_sejour_estimees + ' €'"></span> | Frais dossier : <span x-text="off.prix.frais_dossier + ' €'"></span>
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Transport & Vol -->
+                            <tr>
+                                <td class="p-3 font-bold text-slate-900">
+                                    <div>Transport & Vol</div>
+                                    <div class="text-[10px] text-slate-500 font-normal">Direct vs escale, compagnie</div>
+                                </td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1.5" :class="getStatusBadgeClass(off.transport.statut)" x-text="getStatusLabel(off.transport.statut)"></span>
+                                        <div class="font-semibold text-slate-800" x-text="off.transport.type_transport"></div>
+                                        <template x-if="off.transport.est_vol">
+                                            <div class="mt-1 space-y-0.5 text-[11px]">
+                                                <div :class="off.transport.vol_direct ? 'text-emerald-700 font-bold' : (off.transport.vol_direct === false ? 'text-amber-700 font-bold' : 'text-slate-500')">
+                                                    ✈ <span x-text="off.transport.vol_direct === true ? 'Vol direct confirmé' : (off.transport.vol_direct === false ? 'Vol avec escale(s)' : 'Type de vol non précisé')"></span>
+                                                </div>
+                                                <div class="text-slate-600">
+                                                    Cie : <strong x-text="off.transport.compagnie_aerienne"></strong>
+                                                    <span x-show="off.transport.compagnie_nommee_clairement" class="text-emerald-600 text-[10px]">(Garantie)</span>
+                                                    <span x-show="!off.transport.compagnie_nommee_clairement" class="text-amber-600 text-[10px]">(Non garantie)</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div class="text-[10px] text-slate-500 mt-1" x-text="off.transport.details"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Hébergement & Localisation -->
+                            <tr class="bg-slate-50/50">
+                                <td class="p-3 font-bold text-slate-900">
+                                    <div>Hébergement</div>
+                                    <div class="text-[10px] text-slate-500 font-normal">Localisation & avis vérifiés</div>
+                                </td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1.5" :class="getStatusBadgeClass(off.hebergement.statut)" x-text="getStatusLabel(off.hebergement.statut)"></span>
+                                        <div class="font-bold text-slate-900" x-text="off.hebergement.nom"></div>
+                                        <div class="text-[11px] text-slate-600 font-semibold" x-text="off.hebergement.standing + ' • ' + off.hebergement.adresse"></div>
+                                        
+                                        <!-- Emplacement -->
+                                        <div class="mt-2 p-2 bg-white rounded border border-slate-200 text-[11px]">
+                                            <span class="font-bold text-slate-700 block">Pertinence emplacement :</span>
+                                            <span class="text-slate-600" x-text="off.hebergement.pertinence_emplacement"></span>
+                                        </div>
+
+                                        <!-- Avis -->
+                                        <div class="mt-1.5 text-[11px]">
+                                            <template x-if="off.hebergement.avis_verifie">
+                                                <div class="text-amber-700 font-bold">
+                                                    ⭐ <span x-text="off.hebergement.avis_note"></span>/5 (<span x-text="off.hebergement.avis_nombre"></span> avis certifiés)
+                                                </div>
+                                            </template>
+                                            <template x-if="!off.hebergement.avis_verifie">
+                                                <div class="text-slate-500 italic text-[10px]" x-text="off.hebergement.avis_source"></div>
+                                            </template>
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Restauration -->
+                            <tr>
+                                <td class="p-3 font-bold text-slate-900">Restauration</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.restauration.statut)" x-text="getStatusLabel(off.restauration.statut)"></span>
+                                        <div class="font-bold text-slate-900" x-text="off.restauration.formule"></div>
+                                        <div class="text-[11px] text-slate-600 mt-0.5" x-text="off.restauration.description"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Visites & Activités -->
+                            <tr class="bg-slate-50/50">
+                                <td class="p-3 font-bold text-slate-900">Visites & Activités</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.activites.statut)" x-text="getStatusLabel(off.activites.statut)"></span>
+                                        <div class="font-semibold text-slate-800" x-text="off.activites.description"></div>
+                                        <div class="text-[10px] mt-1" :class="off.activites.billets_inclus ? 'text-emerald-700 font-bold' : 'text-slate-500'">
+                                            🎟️ <span x-text="off.activites.billets_inclus ? 'Billets coupe-files inclus' : 'Billets non compris'"></span>
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Guide / Accompagnateur -->
+                            <tr>
+                                <td class="p-3 font-bold text-slate-900">Guide ou Accompagnateur</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.guide.statut)" x-text="getStatusLabel(off.guide.statut)"></span>
+                                        <div class="font-semibold text-slate-800" x-text="off.guide.qualification"></div>
+                                        <div class="text-[10px] text-slate-500 mt-0.5" x-text="off.guide.description"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Assurance -->
+                            <tr class="bg-slate-50/50">
+                                <td class="p-3 font-bold text-slate-900">Assurance & Assistance</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.assurance.statut)" x-text="getStatusLabel(off.assurance.statut)"></span>
+                                        <div class="text-slate-800 font-medium" x-text="off.assurance.type_couverture"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Annulation -->
+                            <tr>
+                                <td class="p-3 font-bold text-slate-900">Conditions d'Annulation</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <div class="font-bold text-slate-900" x-text="off.annulation.flexibilite"></div>
+                                        <div class="text-[11px] text-slate-600 mt-0.5" x-text="off.annulation.conditions_detaillees"></div>
+                                        <div class="text-[10px] text-emerald-700 font-semibold mt-1" x-show="off.annulation.date_limite_annulation_gratuite" x-text="'Limite sans frais : ' + off.annulation.date_limite_annulation_gratuite"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                            <!-- Vendeur & Fiabilité -->
+                            <tr class="bg-slate-50/50">
+                                <td class="p-3 font-bold text-slate-900">Vendeur & Garanties</td>
+                                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                                    <td class="p-3 border-l border-slate-200">
+                                        <div class="font-bold text-slate-900" x-text="off.vendeur.nom"></div>
+                                        <div class="text-[10px] text-slate-600 font-medium mt-0.5" x-text="off.vendeur.statut_juridique"></div>
+                                        <div class="text-[10px] text-slate-500 mt-1 italic leading-tight" x-text="off.vendeur.fiabilite_explication"></div>
+                                    </td>
+                                </template>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. Points Forts, Limites & Questions au Vendeur -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 card-print">
+                <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-900 pb-2 mb-3 border-b border-slate-100 flex items-center justify-between">
+                                <span x-text="off.titre"></span>
+                                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold" x-text="comparisonResult.scores[off.id].score_global + '/100'"></span>
+                            </h3>
+
+                            <!-- Points forts -->
+                            <div class="mb-4">
+                                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                                    <span>✓</span> Points forts :
+                                </span>
+                                <ul class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                    <template x-for="pf in off.points_forts" :key="pf">
+                                        <li x-text="pf"></li>
+                                    </template>
+                                </ul>
+                            </div>
+
+                            <!-- Limites -->
+                            <div class="mb-4">
+                                <span class="text-xs font-bold text-red-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                                    <span>✕</span> Limites & Points de vigilance :
+                                </span>
+                                <ul class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                    <template x-for="pl in off.points_faibles" :key="pl">
+                                        <li x-text="pl"></li>
+                                    </template>
+                                </ul>
+                            </div>
+
+                            <!-- Questions à poser au vendeur -->
+                            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl">
+                                <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                                    <span>❓</span> À confirmer auprès du vendeur avant réservation :
+                                </span>
+                                <ul class="text-[11px] text-amber-900 space-y-1 list-disc list-inside">
+                                    <template x-for="q in off.points_a_clarifier" :key="q">
+                                        <li x-text="q"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Boutons de fin de rapport -->
+            <div class="flex justify-between items-center no-print">
+                <button @click="step = 2" class="text-xs font-bold text-slate-700 hover:text-black">
+                    ← Revenir à l'édition des offres
+                </button>
+                <button @click="printReport()" class="bg-brand-700 hover:bg-brand-800 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow transition">
+                    Imprimer le dossier complet 🖨️
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer Neutre & Déontologie -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 no-print mt-auto">
+        <div class="max-w-7xl mx-auto px-4 space-y-1">
+            <p class="font-semibold text-slate-700">Comparateur Indépendant d'Offres Touristiques • Conçu pour Voyageurs & Conseillers en Voyages</p>
+            <p>Respect strict de la déontologie de l'information : séparation des sources, aucune invention de données ou d'avis, neutralité économique.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
