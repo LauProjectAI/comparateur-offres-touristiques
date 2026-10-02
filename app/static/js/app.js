@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
         // Modal & saisie
         urlInput: '',
         uploading: false,
+        isDragging: false,
         activeTabOfferIndex: 0,
         
         // Pondérations transparentes du score
@@ -229,9 +230,26 @@ document.addEventListener('alpine:init', () => {
             this.validateAllOffers();
         },
 
-        // Upload de fichier (PDF, Word, Excel)
-        async handleFileUpload(event) {
-            const file = event.target.files[0];
+        // Glisser-déposer de fichier
+        handleFileDrop(event) {
+            this.isDragging = false;
+            const dt = event.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                this.uploadFile(dt.files[0]);
+            }
+        },
+
+        // Sélection via explorateur de fichier
+        handleFileUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (file) {
+                this.uploadFile(file);
+            }
+            event.target.value = '';
+        },
+
+        // Upload centralisé de fichier vers FastAPI
+        async uploadFile(file) {
             if (!file) return;
 
             const formData = new FormData();
@@ -262,7 +280,6 @@ document.addEventListener('alpine:init', () => {
             } finally {
                 this.loading = false;
                 this.uploading = false;
-                event.target.value = '';
             }
         },
 

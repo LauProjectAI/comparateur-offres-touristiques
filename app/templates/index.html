@@ -167,9 +167,18 @@
                         </div>
                         <p class="text-xs text-slate-500 mb-3">Accepte les formats <strong>PDF, Word (.docx) et Excel (.xlsx)</strong>. Contenu traité comme données pures.</p>
                         
-                        <label class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/30 rounded-lg p-3 text-center cursor-pointer block transition">
-                            <span class="text-xs font-semibold text-slate-700" x-show="!uploading">Choisir ou glisser un fichier</span>
-                            <span class="text-xs font-semibold text-brand-700" x-show="uploading">Extraction en cours...</span>
+                        <label class="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer block transition relative"
+                               :class="isDragging ? 'border-brand-600 bg-brand-50/80 ring-2 ring-brand-500/30' : 'border-slate-300 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/30'"
+                               @dragover.prevent="isDragging = true"
+                               @dragleave.prevent="isDragging = false"
+                               @drop.prevent="handleFileDrop($event)">
+                            <div x-show="!uploading" class="space-y-1">
+                                <span class="text-xs font-bold text-slate-800 block">Choisir ou glisser un fichier</span>
+                                <span class="text-[11px] text-slate-500 block">PDF, Word (.docx) ou Excel (.xlsx)</span>
+                            </div>
+                            <div x-show="uploading" class="py-1 flex items-center justify-center space-x-2">
+                                <span class="text-xs font-bold text-brand-700 animate-pulse">Extraction en cours...</span>
+                            </div>
                             <input type="file" @change="handleFileUpload($event)" accept=".pdf,.docx,.xlsx,.doc,.xls" class="hidden">
                         </label>
                     </div>

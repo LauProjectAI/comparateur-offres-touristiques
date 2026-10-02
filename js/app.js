@@ -15,6 +15,8 @@ document.addEventListener('alpine:init', () => {
         // Modal & saisie
         urlInput: '',
         uploading: false,
+        uploadProgressText: '',
+        isDragging: false,
         activeTabOfferIndex: 0,
         
         // Pondérations transparentes du score
@@ -226,13 +228,31 @@ document.addEventListener('alpine:init', () => {
             this.validateAllOffers();
         },
 
-        // Extraction client-side sécurisée d'un fichier (PDF, Word, Excel)
-        async handleFileUpload(event) {
-            const file = event.target.files[0];
+        // Gestion du glisser-déposer de fichiers
+        handleFileDrop(event) {
+            this.isDragging = false;
+            const dt = event.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                this.processFile(dt.files[0]);
+            }
+        },
+
+        // Sélection de fichier via l'explorateur
+        handleFileUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (file) {
+                this.processFile(file);
+            }
+            event.target.value = '';
+        },
+
+        // Traitement centralisé sécurisé d'un fichier (PDF, Word, Excel)
+        async processFile(file) {
             if (!file) return;
 
             this.loading = true;
             this.uploading = true;
+            this.uploadProgressText = 'Lecture du document...';
             this.errorMessage = '';
 
             const filename = file.name;
@@ -242,36 +262,38 @@ document.addEventListener('alpine:init', () => {
                 let extractedText = '';
 
                 if (ext === 'pdf') {
-                    // Extraction PDF via pdf.js
+                    this.uploadProgressText = 'Extraction PDF...';
                     extractedText = await this.extractTextFromPDF(file);
                 } else if (ext === 'docx' || ext === 'doc') {
-                    // Extraction Word via mammoth.js
+                    this.uploadProgressText = 'Extraction Word DOCX...';
                     extractedText = await this.extractTextFromDOCX(file);
                 } else if (ext === 'xlsx' || ext === 'xls') {
-                    // Extraction Excel via SheetJS
+                    this.uploadProgressText = 'Extraction Excel...';
                     extractedText = await this.extractTextFromXLSX(file);
                 } else {
                     throw new Error(`Format .${ext} non supporté. Veuillez choisir un fichier PDF, Word (.docx) ou Excel (.xlsx).`);
                 }
 
-                if (!extractedText.trim()) {
+                if (!extractedText || !extractedText.trim()) {
                     throw new Error("Aucun texte exploitable n'a pu être extrait du document.");
                 }
 
+                this.uploadProgressText = 'Structuration des informations...';
                 // Parser et structurer les données extraites
                 const newOffer = this.parseOfferText(extractedText, `file-${Date.now()}`, ext, filename);
                 this.offers.push(newOffer);
                 this.activeTabOfferIndex = this.offers.length - 1;
                 this.validateAllOffers();
-                this.successMessage = `Fichier « ${filename} » extrait avec succès dans votre navigateur !`;
+                this.successMessage = `Fichier « ${filename} » extrait et analysé avec succès !`;
                 setTimeout(() => this.successMessage = '', 6000);
 
             } catch (err) {
+                console.error("Erreur lecture fichier:", err);
                 this.errorMessage = "Échec de lecture du fichier : " + err.message;
             } finally {
                 this.loading = false;
                 this.uploading = false;
-                event.target.value = '';
+                this.uploadProgressText = '';
             }
         },
 
@@ -289,11 +311,55 @@ document.addEventListener('alpine:init', () => {
             return fullText;
         },
 
-        // Extraction DOCX via mammoth
+        // Extraction DOCX rapide et résiliente (JSZip prioritaire + Mammoth en secours)
         async extractTextFromDOCX(file) {
             const arrayBuffer = await file.arrayBuffer();
-            const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-            return result.value;
+
+            // 1. Décompression ultra-rapide par JSZip (extrait word/document.xml en ignorant les gros médias)
+            if (typeof JSZip !== 'undefined') {
+                try {
+                    const zip = await JSZip.loadAsync(arrayBuffer);
+                    const docXmlFile = zip.file("word/document.xml");
+                    if (docXmlFile) {
+                        const xmlText = await docXmlFile.async("string");
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+                        
+                        const paragraphs = xmlDoc.getElementsByTagName("w:p");
+                        const lines = [];
+                        for (let i = 0; i < paragraphs.length; i++) {
+                            const p = paragraphs[i];
+                            const textNodes = p.getElementsByTagName("w:t");
+                            let pText = "";
+                            for (let j = 0; j < textNodes.length; j++) {
+                                pText += textNodes[j].textContent;
+                            }
+                            if (pText.trim().length > 0) {
+                                lines.push(pText.trim());
+                            }
+                        }
+                        if (lines.length > 0) {
+                            return lines.join("\n");
+                        }
+                    }
+                } catch (zipErr) {
+                    console.warn("Extraction JSZip échouée, essai avec Mammoth :", zipErr);
+                }
+            }
+
+            // 2. Décompression via Mammoth (si JSZip indisponible ou archive complexe)
+            if (typeof mammoth !== 'undefined' && mammoth.extractRawText) {
+                try {
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    if (result && result.value && result.value.trim().length > 0) {
+                        return result.value;
+                    }
+                } catch (mErr) {
+                    console.warn("Extraction Mammoth échouée :", mErr);
+                }
+            }
+
+            throw new Error("Impossible de lire le document Word (.docx). Assurez-vous qu'il ne soit pas endommagé ou protégé.");
         },
 
         // Extraction XLSX via SheetJS
@@ -308,26 +374,22 @@ document.addEventListener('alpine:init', () => {
             return fullText;
         },
 
-        // Parser textuel intelligent
+        // Parser textuel intelligent avec priorisation sémantique
         parseOfferText(rawText, offerId, sourceType, sourceRef) {
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
             const lower = rawText.toLowerCase();
 
-            // Titre
+            // 1. Titre
             const titre = lines[0] ? lines[0].substring(0, 80) : `Offre extraite (${sourceRef})`;
 
-            // Prix
-            let prixAnnonce = 1500;
-            const prixMatches = rawText.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/gi);
-            if (prixMatches) {
-                const vals = prixMatches.map(m => {
-                    const clean = m.replace(/[^\d,\.]/g, '').replace(',', '.');
-                    return parseFloat(clean);
-                }).filter(v => v >= 50 && v <= 35000);
-                if (vals.length > 0) prixAnnonce = vals[vals.length - 1];
+            // 2. Vendeur
+            let vendeurNom = 'Organisateur non identifié';
+            const mVendeur = rawText.match(/(?:organisé par|vendu par|agence|voyagiste|tour-opérateur)\s*[:\-]?\s*([A-Za-z0-9\s\-&]{3,35})/i);
+            if (mVendeur) {
+                vendeurNom = mVendeur[1].trim();
             }
 
-            // Durée
+            // 3. Durée (jours et nuits)
             let jours = 7, nuits = 6;
             const mJours = rawText.match(/(\d+)\s*(?:jours|j)\b/i);
             const mNuits = rawText.match(/(\d+)\s*(?:nuits?|n)\b/i);
@@ -335,12 +397,85 @@ document.addEventListener('alpine:init', () => {
             if (mNuits) nuits = parseInt(mNuits[1]);
             else if (jours > 1) nuits = jours - 1;
 
-            // Transport / Vol
+            // 4. Nombre de personnes
+            let nbPersonnes = 2;
+            const mPers = rawText.match(/(?:pour|devis\s+pour|groupe\s+de)\s+(\d+)\s*(?:personnes?|voyageurs?|adultes?|pax)/i);
+            if (mPers) {
+                const nb = parseInt(mPers[1]);
+                if (nb >= 1 && nb <= 100) nbPersonnes = nb;
+            }
+
+            // 5. Prix et devises avec détection prix par personne
+            let prixTotal = 0;
+            let isPricePerPerson = false;
+
+            // Priorité 1 : Recherche de libellé explicite
+            const mExplicitPrice = rawText.match(/(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/i);
+            if (mExplicitPrice) {
+                const cleanP = mExplicitPrice[1].replace(/[^\d,\.]/g, '').replace(',', '.');
+                const val = parseFloat(cleanP);
+                if (val >= 50 && val <= 50000) {
+                    prixTotal = val;
+                    if (/par\s*personne|en\s*chambre\s*double|\/pers|\/pax|p\/p/i.test(mExplicitPrice[0])) {
+                        isPricePerPerson = true;
+                    }
+                }
+            }
+
+            // Priorité 2 : Scan des montants s'il n'y a pas de libellé explicite
+            if (prixTotal === 0) {
+                const prixMatches = rawText.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/gi);
+                if (prixMatches) {
+                    const vals = prixMatches.map(m => {
+                        const clean = m.replace(/[^\d,\.]/g, '').replace(',', '.');
+                        return parseFloat(clean);
+                    }).filter(v => v >= 150 && v <= 35000);
+                    if (vals.length > 0) {
+                        const grands = vals.filter(v => v >= 300);
+                        prixTotal = grands.length > 0 ? grands[0] : vals[vals.length - 1];
+                    }
+                }
+            }
+
+            if (prixTotal === 0) prixTotal = 1500;
+
+            // Si le prix extrait était expressément par personne, calculer le total pour le dossier
+            if (isPricePerPerson && prixTotal > 0) {
+                prixTotal = Math.round(prixTotal * nbPersonnes);
+            }
+
+            // 6. Dates (numériques ou textuelles en français)
+            let dateDep = '';
+            let dateRet = '';
+            const mDateText = rawText.match(/du\s+(\d{1,2})\s*(?:er)?\s*(?:au|à)\s*(\d{1,2})\s+([a-zéû]+)\s+(\d{4})/i);
+            if (mDateText) {
+                const months = {
+                    'janvier': '01', 'fevrier': '02', 'février': '02', 'mars': '03', 'avril': '04',
+                    'mai': '05', 'juin': '06', 'juillet': '07', 'aout': '08', 'août': '08',
+                    'septembre': '09', 'octobre': '10', 'novembre': '11', 'decembre': '12', 'décembre': '12'
+                };
+                const j1 = String(parseInt(mDateText[1])).padStart(2, '0');
+                const j2 = String(parseInt(mDateText[2])).padStart(2, '0');
+                const mNum = months[mDateText[3].toLowerCase()] || '01';
+                const annee = mDateText[4];
+                dateDep = `${j1}/${mNum}/${annee}`;
+                dateRet = `${j2}/${mNum}/${annee}`;
+            } else {
+                const mDates = rawText.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/g);
+                if (mDates && mDates.length >= 1) dateDep = mDates[0];
+                if (mDates && mDates.length >= 2) dateRet = mDates[1];
+            }
+
+            // 7. Transport / Vol
             let estVol = lower.includes('vol') || lower.includes('avion') || lower.includes('aérien');
-            let volDirect = lower.includes('vol direct') || lower.includes('sans escale') ? true : (lower.includes('escale') ? false : null);
+            let volDirect = (lower.includes('avec escale') || lower.includes('escales') || lower.includes('correspondance')) ? false : ((lower.includes('vol direct') || lower.includes('sans escale')) ? true : null);
             let compagnie = 'Non précisée';
             let compagnieNommee = false;
-            const airlines = ['Air France', 'Lufthansa', 'Iberia', 'TAP Air Portugal', 'Transavia', 'EasyJet', 'Ryanair', 'Emirates', 'Icelandair'];
+            const airlines = [
+                'Air France', 'Lufthansa', 'Iberia', 'TAP Air Portugal', 'Transavia', 'EasyJet',
+                'Ryanair', 'Emirates', 'Icelandair', 'Qatar Airways', 'KLM', 'British Airways',
+                'Turkish Airlines', 'Swiss', 'Volotea', 'Vueling'
+            ];
             for (const cie of airlines) {
                 if (lower.includes(cie.toLowerCase())) {
                     compagnie = cie;
@@ -348,48 +483,59 @@ document.addEventListener('alpine:init', () => {
                     break;
                 }
             }
+            let detailsVol = estVol ? (volDirect === true ? `Vol direct confirmé (${compagnie})` : (volDirect === false ? `Vol avec escale(s) (${compagnie})` : (compagnieNommee ? `Vol ${compagnie}` : 'Vol standard'))) : 'Transport terrestre / Autocar';
 
-            // Hébergement
-            let standing = '3 étoiles';
-            if (lower.includes('5 étoiles') || lower.includes('5*')) standing = '5 étoiles';
+            // 8. Hébergement & standing
+            let standing = 'Standard 3/4 étoiles';
+            if (lower.includes('1ère catégorie') || lower.includes('1ere categorie')) standing = '1ère catégorie (Standard 3/4*)';
+            else if (lower.includes('5 étoiles') || lower.includes('5*') || lower.includes('luxe')) standing = '5 étoiles / Luxe';
             else if (lower.includes('4 étoiles') || lower.includes('4*')) standing = '4 étoiles';
+            else if (lower.includes('3 étoiles') || lower.includes('3*')) standing = '3 étoiles';
 
-            let nomHeb = 'Hôtel mentionné dans le dossier';
-            const mHotel = rawText.match(/(?:hôtel|hotel|resort|lodge|riad|finca)\s+([A-Za-z0-9\s'\-]{3,30})/i);
-            if (mHotel) nomHeb = mHotel[0].trim();
+            let nomHeb = 'Hôtel ou hébergements mentionnés dans le dossier';
+            const mSecHotels = rawText.match(/(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DES\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,600}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|$)/i);
+            if (mSecHotels) {
+                const secLines = mSecHotels[0].split('\n').map(l => l.trim()).filter(l => l.length > 5 && !/(?:donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+des)/i.test(l));
+                const cleanHotels = secLines.map(l => l.replace(/\s+/g, ' ')).filter(l => !l.startsWith('('));
+                if (cleanHotels.length > 0) {
+                    nomHeb = cleanHotels.slice(0, 4).join(' / ');
+                }
+            } else {
+                const mHotel = rawText.match(/(?:hôtel|hotel|resort|lodge|riad|finca)\s+([A-Za-z0-9\s'\-]{3,30})/i);
+                if (mHotel) nomHeb = mHotel[0].trim();
+            }
 
-            // Restauration
+            // 9. Restauration
             let formule = 'Bed and Breakfast';
             if (lower.includes('all inclusive') || lower.includes('tout compris') || lower.includes('tout inclus')) formule = 'All Inclusive';
-            else if (lower.includes('pension complète') || lower.includes('full board')) formule = 'Full Board';
+            else if (lower.includes('pension complète') || lower.includes('full board') || lower.includes('pension complete')) formule = 'Full Board';
             else if (lower.includes('demi-pension') || lower.includes('half board')) formule = 'Half Board';
             else if (lower.includes('sans repas')) formule = 'Sans repas';
+            let descRepas = `Formule ${formule}`;
+            if (formule === 'Full Board' && lower.includes('boisson')) {
+                descRepas = "Pension Complète avec forfait boissons inclus";
+            }
 
-            // Billets & Activités
-            let billetsInclus = lower.includes('billets inclus') || lower.includes('coupe-file') || lower.includes('entrées incluses');
+            // 10. Billets & Activités
+            let billetsInclus = lower.includes('billets inclus') || lower.includes('coupe-file') || lower.includes('entrées incluses') || lower.includes('droits d\'entrée');
 
-            // Guide
+            // 11. Guide
             let qualifGuide = 'Non précisé';
-            if (lower.includes('guide francophone') || lower.includes('guide local')) qualifGuide = 'Guide local francophone diplômé';
+            if (lower.includes('guide francophone') || lower.includes('guide accompagnateur') || lower.includes('guide local')) qualifGuide = 'Guide local francophone diplômé';
             else if (lower.includes('sans guide') || lower.includes('autonomie')) qualifGuide = 'Aucun guide';
 
-            // Flexibilité
+            // 12. Flexibilité
             let flex = 'Modérée';
             if (lower.includes('annulation gratuite') || lower.includes('sans frais') || lower.includes('remboursable')) flex = 'Très flexible';
             else if (lower.includes('non remboursable')) flex = 'Stricte';
-
-            // Vendeur
-            let vendeurNom = 'Organisateur non identifié';
-            const mVendeur = rawText.match(/(?:organisé par|vendu par|agence|voyagiste)\s*[:\-]?\s*([A-Za-z0-9\s\-&]{3,35})/i);
-            if (mVendeur) vendeurNom = mVendeur[1].trim();
 
             return {
                 id: offerId,
                 titre: titre,
                 source_origine_type: sourceType,
                 source_reference: sourceRef,
-                date_depart: '',
-                date_retour: '',
+                date_depart: dateDep,
+                date_retour: dateRet,
                 duree_jours: jours,
                 duree_nuits: nuits,
                 conforme_criteres: true,
@@ -403,7 +549,7 @@ document.addEventListener('alpine:init', () => {
                     vol_direct: volDirect,
                     compagnie_aerienne: compagnie,
                     compagnie_nommee_clairement: compagnieNommee,
-                    details: estVol ? (volDirect ? 'Vol direct confirmé' : 'Vol standard') : 'Transport inclus',
+                    details: detailsVol,
                     source: 'Vendeur (document ou lien)'
                 },
                 hebergement: {
@@ -422,7 +568,7 @@ document.addEventListener('alpine:init', () => {
                 restauration: {
                     statut: formule === 'Sans repas' ? 'absent' : 'inclus',
                     formule: formule,
-                    description: `Formule ${formule} selon descriptif`,
+                    description: descRepas,
                     source: 'Vendeur (document ou lien)'
                 },
                 activites: {
@@ -451,16 +597,16 @@ document.addEventListener('alpine:init', () => {
                     source: 'Vendeur (document ou lien)'
                 },
                 prix: {
-                    prix_total_annonce: prixAnnonce,
+                    prix_total_annonce: prixTotal,
                     devise: 'EUR',
-                    nombre_personnes: 2,
+                    nombre_personnes: nbPersonnes,
                     taxes_incluses: true,
-                    taxes_sejour_estimees: Math.round(1.5 * nuits * 2),
-                    frais_dossier: 0,
+                    taxes_sejour_estimees: Math.round(1.5 * nuits * nbPersonnes),
+                    frais_dossier: lower.includes('frais de dossier') ? 25 : 0,
                     supplements_connus: 0,
-                    prix_total_normalise: prixAnnonce,
-                    prix_par_personne: Math.round(prixAnnonce / 2),
-                    prix_par_personne_par_nuit: Math.round(prixAnnonce / (2 * nuits)),
+                    prix_total_normalise: prixTotal + (lower.includes('frais de dossier') ? 25 : 0),
+                    prix_par_personne: Math.round(prixTotal / nbPersonnes),
+                    prix_par_personne_par_nuit: Math.round(prixTotal / (nbPersonnes * nuits)),
                     source: 'Vendeur (document ou lien)'
                 },
                 vendeur: {

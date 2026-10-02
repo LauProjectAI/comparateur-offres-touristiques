@@ -127,7 +127,6 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     
     # 2. Vendeur
     vendeur_nom = "Organisateur non identifié"
-    # Recherche motifs : Agence XYZ, Organisé par..., Vendu par...
     m_vendeur = re.search(r'(?:organisé par|vendu par|agence|voyagiste|tour-opérateur|organisateur)\s*[:\-]?\s*([A-Za-z0-9\s\-&]{3,35})', text_clean, re.IGNORECASE)
     if m_vendeur:
         vendeur_nom = m_vendeur.group(1).strip()
@@ -148,30 +147,56 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
 
     # 3. Prix et devises
     prix_total = 0.0
-    # Motifs : 1 250 €, 1250 EUR, 990€, etc.
-    m_prix = re.findall(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)', text_clean, re.IGNORECASE)
-    if m_prix:
-        # Prendre le montant le plus plausible (souvent le plus élevé ou explicite)
-        candidats = []
-        for p_str in m_prix:
-            cleaned = p_str.replace(' ', '').replace(',', '.')
-            try:
-                val = float(cleaned)
-                if 50 <= val <= 30000:
-                    candidats.append(val)
-            except ValueError:
-                pass
-        if candidats:
-            prix_total = candidats[-1] # Souvent le total en bas ou synthèse
+    is_price_per_person = False
 
-    # Nombre de personnes
-    nb_personnes = 2
-    m_pers = re.search(r'(\d+)\s*(?:personnes?|voyageurs?|adultes?|pax)', text_clean, re.IGNORECASE)
-    if m_pers:
+    # Priorité 1 : Recherche d'un libellé explicite de prix (ex: "Prix net TTC par personne : 2 655 €", "Prix total : 1950 €")
+    m_explicit_price = re.search(
+        r'(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)',
+        text_clean,
+        re.IGNORECASE
+    )
+    if m_explicit_price:
+        p_val_str = m_explicit_price.group(1).replace(' ', '').replace(',', '.')
         try:
-            nb_personnes = int(m_pers.group(1))
+            val = float(p_val_str)
+            if 50 <= val <= 50000:
+                prix_total = val
+                if re.search(r'par\s+personne|en\s+chambre\s+double|\/pers|\/pax|p\/p', m_explicit_price.group(0), re.IGNORECASE):
+                    is_price_per_person = True
         except ValueError:
             pass
+
+    # Priorité 2 : Si aucun prix libellé, analyser tous les montants
+    if prix_total == 0.0:
+        m_prix = re.findall(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)', text_clean, re.IGNORECASE)
+        if m_prix:
+            candidats = []
+            for p_str in m_prix:
+                cleaned = p_str.replace(' ', '').replace(',', '.')
+                try:
+                    val = float(cleaned)
+                    if 150 <= val <= 35000:
+                        candidats.append(val)
+                except ValueError:
+                    pass
+            if candidats:
+                grands = [v for v in candidats if v >= 300]
+                prix_total = grands[0] if grands else candidats[-1]
+
+    # Nombre de personnes (défaut = 2 pour base chambre double)
+    nb_personnes = 2
+    m_pers = re.search(r'(?:pour|devis\s+pour|groupe\s+de)\s+(\d+)\s*(?:personnes?|voyageurs?|adultes?|pax)', text_clean, re.IGNORECASE)
+    if m_pers:
+        try:
+            nb = int(m_pers.group(1))
+            if 1 <= nb <= 100:
+                nb_personnes = nb
+        except ValueError:
+            pass
+
+    # Si le prix extrait était expressément par personne, calculer le total correspondant pour le nombre de personnes
+    if is_price_per_person and prix_total > 0:
+        prix_total = round(prix_total * nb_personnes, 2)
 
     # Durée / Nuits
     duree_jours = 7
@@ -185,10 +210,26 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     elif duree_jours > 1:
         duree_nuits = duree_jours - 1
 
-    # Dates
-    m_dates = re.findall(r'(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})', text_clean)
-    date_dep = m_dates[0] if len(m_dates) >= 1 else "À convenir"
-    date_ret = m_dates[1] if len(m_dates) >= 2 else ""
+    # Dates (supporte format numérique et textuel en français)
+    date_dep = "À convenir"
+    date_ret = ""
+    m_date_text = re.search(r'du\s+(\d{1,2})\s*(?:er)?\s*(?:au|à)\s*(\d{1,2})\s+([a-zéû]+)\s+(\d{4})', text_clean, re.IGNORECASE)
+    if m_date_text:
+        months = {
+            'janvier': '01', 'fevrier': '02', 'février': '02', 'mars': '03', 'avril': '04',
+            'mai': '05', 'juin': '06', 'juillet': '07', 'aout': '08', 'août': '08',
+            'septembre': '09', 'octobre': '10', 'novembre': '11', 'decembre': '12', 'décembre': '12'
+        }
+        j1, j2, m_str, annee = m_date_text.groups()
+        m_num = months.get(m_str.lower(), '01')
+        date_dep = f"{int(j1):02d}/{m_num}/{annee}"
+        date_ret = f"{int(j2):02d}/{m_num}/{annee}"
+    else:
+        m_dates = re.findall(r'(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})', text_clean)
+        if len(m_dates) >= 1:
+            date_dep = m_dates[0]
+        if len(m_dates) >= 2:
+            date_ret = m_dates[1]
 
     prix = PriceDetail(
         prix_total_annonce=prix_total,
@@ -213,7 +254,7 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     lower_text = text_clean.lower()
     if any(k in lower_text for k in ["vol", "avion", "aérien", "flight"]):
         est_vol = True
-        t_statut = ServiceStatus.INCLUS if any(k in lower_text for k in ["vol inclus", "vols a/r inclus", "billet d'avion inclus", "vols compris"]) else ServiceStatus.EN_SUPPLEMENT if "vol en supplément" in lower_text else ServiceStatus.INCLUS
+        t_statut = ServiceStatus.INCLUS if any(k in lower_text for k in ["vol inclus", "vols a/r inclus", "billet d'avion inclus", "vols compris", "vols réguliers", "ce prix comprend"]) else ServiceStatus.EN_SUPPLEMENT if "vol en supplément" in lower_text else ServiceStatus.INCLUS
         
         # Compagnie aérienne
         for cie in AIRLINES_PATTERNS:
@@ -223,15 +264,15 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
                 break
         
         # Vol direct ou escale
-        if "vol direct" in lower_text or "sans escale" in lower_text:
-            vol_direct = True
-            t_desc = "Vol direct confirmé"
-        elif "escale" in lower_text or "correspondance" in lower_text:
+        if "avec escale" in lower_text or "escales" in lower_text or "correspondance" in lower_text:
             vol_direct = False
-            t_desc = "Vol avec escale(s)"
+            t_desc = f"Vol avec escale(s) ({compagnie})" if compagnie_claire else "Vol avec escale(s)"
+        elif "vol direct" in lower_text or "sans escale" in lower_text:
+            vol_direct = True
+            t_desc = f"Vol direct confirmé ({compagnie})" if compagnie_claire else "Vol direct"
         else:
             vol_direct = None
-            t_desc = "Type de vol (direct/escale) non précisé dans l'offre"
+            t_desc = f"Vol {compagnie} (statut direct/escale non spécifié)" if compagnie_claire else "Type de vol (direct/escale) non précisé"
 
     elif any(k in lower_text for k in ["train", "sncf", "tgv", "eurostar"]):
         t_statut = ServiceStatus.INCLUS
@@ -256,27 +297,41 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     h_statut = ServiceStatus.NON_PRECISE
     h_nom = "Hôtel ou hébergement mentionné"
     h_type = "Hôtel"
-    h_adresse = "Adresse non communiquée"
+    h_adresse = "Localisation générale indiquée dans le programme"
     h_standing = "Non précisé"
 
-    if any(k in lower_text for k in ["hôtel", "hotel", "resort", "chambre", "hébergement", "lodge", "riad", "gîte", "bungalow"]):
+    # Vérification présence d'une section explicite d'hôtels (ex: "HOTELS OU SIMILAIRE")
+    m_sec_hotels = re.search(r'(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DES\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,600}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|$)', raw_text, re.IGNORECASE)
+    if m_sec_hotels:
         h_statut = ServiceStatus.INCLUS
-        # Extraction de nom d'hôtel
-        m_hotel = re.search(r'(?:hôtel|hotel|resort|lodge)\s+([A-Z][A-Za-z0-9\s\'\-]{2,30})', text_clean)
+        sec_lines = [l.strip() for l in m_sec_hotels.group(0).splitlines() if l.strip()]
+        hotel_lines = [l for l in sec_lines if not re.search(r'donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+des', l, re.IGNORECASE)]
+        clean_hotels = []
+        for hl in hotel_lines:
+            clean_hl = re.sub(r'\s+', ' ', hl).strip()
+            if len(clean_hl) > 5 and not clean_hl.startswith('('):
+                clean_hotels.append(clean_hl)
+        if clean_hotels:
+            h_nom = " / ".join(clean_hotels[:4])
+            h_type = "Circuit / Hôtels & Lodges"
+
+    elif any(k in lower_text for k in ["hôtel", "hotel", "resort", "chambre", "hébergement", "lodge", "riad", "gîte", "bungalow"]):
+        h_statut = ServiceStatus.INCLUS
+        m_hotel = re.search(r'(?:hôtel|hotel|resort|lodge|riad|finca)\s+([A-Z][A-Za-z0-9\s\'\-]{2,30})', text_clean)
         if m_hotel:
             h_nom = m_hotel.group(0).strip()
-        
-        # Étoiles
+
+    # Standing
+    if "1ère catégorie" in lower_text or "1ere categorie" in lower_text or "premiere categorie" in lower_text:
+        h_standing = "1ère catégorie (Standard 3/4*)"
+    else:
         m_stars = re.search(r'(\d\s*\*|\d\s*étoiles?)', text_clean, re.IGNORECASE)
         if m_stars:
             h_standing = m_stars.group(1).strip()
-            
-        # Adresse / ville
-        m_ville = re.search(r'(?:à|a|situé à|localisation|destination)\s*:\s*([A-Za-z\s\-]{3,25})', text_clean, re.IGNORECASE)
-        if m_ville:
-            h_adresse = m_ville.group(1).strip()
-        else:
-            h_adresse = "Localisation générale indiquée dans le programme"
+        elif "luxe" in lower_text or "5 étoiles" in lower_text:
+            h_standing = "5 étoiles / Luxe"
+        elif "charme" in lower_text:
+            h_standing = "Hôtel de charme"
 
     hebergement = AccommodationDetail(
         statut=h_statut,
@@ -302,10 +357,12 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         r_formule = RestaurationMealPlan.AI
         r_statut = ServiceStatus.INCLUS
         r_desc = "Formule Tout Compris (All Inclusive)"
-    elif "pension complète" in lower_text or "full board" in lower_text:
+    elif "pension complète" in lower_text or "full board" in lower_text or "pension complete" in lower_text:
         r_formule = RestaurationMealPlan.FB
         r_statut = ServiceStatus.INCLUS
         r_desc = "Pension Complète (Full Board)"
+        if "boisson" in lower_text:
+            r_desc += " (avec forfait boissons inclus)"
     elif "demi-pension" in lower_text or "half board" in lower_text:
         r_formule = RestaurationMealPlan.HB
         r_statut = ServiceStatus.INCLUS
