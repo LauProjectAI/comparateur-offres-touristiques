@@ -192,6 +192,11 @@ document.addEventListener('alpine:init', () => {
                     taxes_sejour_estimees: 20,
                     frais_dossier: 0,
                     supplements_connus: 0,
+                    taxes_aeroport: 0,
+                    taxes_aeroport_par_personne: 0,
+                    taxes_aeroport_statut: 'non_applicable',
+                    prix_ht: 1500,
+                    prix_ht_par_personne: 750,
                     prix_total_normalise: 1520,
                     prix_par_personne: 760,
                     prix_par_personne_par_nuit: 126.67,
@@ -618,6 +623,46 @@ document.addEventListener('alpine:init', () => {
             if (lower.includes('annulation gratuite') || lower.includes('sans frais') || lower.includes('remboursable')) flex = 'Très flexible';
             else if (lower.includes('non remboursable')) flex = 'Stricte';
 
+            // Détection des taxes d'aéroport pour voyage aérien
+            let taxesAeroPers = 0;
+            let taxesAeroStatut = 'non_applicable';
+            if (estVol) {
+                const regexList = [
+                    /taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                    /taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                    /dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d['’]\s*)?a[eé]ro/i,
+                    /redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i
+                ];
+                for (const reg of regexList) {
+                    const m = rawText.match(reg);
+                    if (m) {
+                        const val = parseFloat(m[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                        if (val >= 15 && val <= 1500) {
+                            taxesAeroPers = val;
+                            taxesAeroStatut = 'en_supplement';
+                            break;
+                        }
+                    }
+                }
+                if (taxesAeroPers === 0) {
+                    if (/taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport|taxes\s+a[eé]riennes/i.test(rawText)) {
+                        taxesAeroStatut = 'incluses_non_ventilees';
+                    }
+                }
+            }
+
+            const taxesAeroTotal = Math.round(taxesAeroPers * nbPersonnes * 100) / 100;
+            let prixHT = prixTotal;
+            if (estVol && taxesAeroTotal > 0) {
+                if (/prix\s+(?:net\s+)?ttc|ce\s+prix\s+comprend[\s\S]{1,1000}?taxes\s+a[eé]ro/i.test(rawText)) {
+                    prixHT = Math.round(Math.max(0, prixTotal - taxesAeroTotal) * 100) / 100;
+                } else {
+                    prixHT = prixTotal;
+                    prixTotal = Math.round((prixTotal + taxesAeroTotal) * 100) / 100;
+                }
+            }
+            const prixHTPers = Math.round((prixHT / nbPersonnes) * 100) / 100;
+
             return {
                 id: offerId,
                 titre: titre,
@@ -690,9 +735,14 @@ document.addEventListener('alpine:init', () => {
                     devise: 'EUR',
                     nombre_personnes: nbPersonnes,
                     taxes_incluses: true,
-                    taxes_sejour_estimees: Math.round(1.5 * nuits * nbPersonnes),
+                    taxes_sejour_estimees: (/taxe\s+de\s+s[eé]jour/i.test(lower) || !lower.includes('taxe')) ? Math.round(1.5 * nuits * nbPersonnes) : 0,
                     frais_dossier: lower.includes('frais de dossier') ? 25 : 0,
                     supplements_connus: 0,
+                    taxes_aeroport: taxesAeroTotal,
+                    taxes_aeroport_par_personne: taxesAeroPers,
+                    taxes_aeroport_statut: taxesAeroStatut,
+                    prix_ht: prixHT,
+                    prix_ht_par_personne: prixHTPers,
                     prix_total_normalise: prixTotal + (lower.includes('frais de dossier') ? 25 : 0),
                     prix_par_personne: Math.round(prixTotal / nbPersonnes),
                     prix_par_personne_par_nuit: Math.round(prixTotal / (nbPersonnes * nuits)),
@@ -713,10 +763,35 @@ document.addEventListener('alpine:init', () => {
             };
         },
 
-        // Recalcul des prix
-        recalculatePrices(offer) {
+        // Recalcul des prix avec gestion du prix HT et des taxes aéroport en supplément
+        recalculatePrices(offer, lastEdited = null) {
             const nbPers = Math.max(1, parseInt(offer.prix.nombre_personnes) || 1);
             const nuits = Math.max(1, parseInt(offer.duree_nuits) || 1);
+            const estVol = offer.transport && (offer.transport.est_vol || (offer.transport.type_transport && offer.transport.type_transport.toLowerCase().includes('vol')));
+            
+            const taxesAeroPers = parseFloat(offer.prix.taxes_aeroport_par_personne) || 0;
+            const taxesAeroTotal = Math.round(taxesAeroPers * nbPers * 100) / 100;
+            offer.prix.taxes_aeroport = taxesAeroTotal;
+
+            if (estVol) {
+                if (lastEdited === 'ht') {
+                    const pht = parseFloat(offer.prix.prix_ht) || 0;
+                    offer.prix.prix_total_annonce = Math.round((pht + taxesAeroTotal) * 100) / 100;
+                } else if (lastEdited === 'taxes_aero') {
+                    const pht = parseFloat(offer.prix.prix_ht) || (parseFloat(offer.prix.prix_total_annonce) || 0);
+                    offer.prix.prix_total_annonce = Math.round((pht + taxesAeroTotal) * 100) / 100;
+                } else {
+                    const totalAnn = parseFloat(offer.prix.prix_total_annonce) || 0;
+                    offer.prix.prix_ht = Math.round(Math.max(0, totalAnn - taxesAeroTotal) * 100) / 100;
+                }
+                offer.prix.prix_ht_par_personne = Math.round((offer.prix.prix_ht / nbPers) * 100) / 100;
+            } else {
+                offer.prix.prix_ht = parseFloat(offer.prix.prix_total_annonce) || 0;
+                offer.prix.prix_ht_par_personne = Math.round((offer.prix.prix_ht / nbPers) * 100) / 100;
+                offer.prix.taxes_aeroport = 0;
+                offer.prix.taxes_aeroport_par_personne = 0;
+            }
+
             const totalAnnonce = parseFloat(offer.prix.prix_total_annonce) || 0;
             const taxes = parseFloat(offer.prix.taxes_sejour_estimees) || 0;
             const frais = parseFloat(offer.prix.frais_dossier) || 0;
@@ -819,7 +894,14 @@ document.addEventListener('alpine:init', () => {
                 ["Visites & Activités", o => `${o.activites.statut.toUpperCase()} (${o.activites.billets_inclus ? 'Billets inclus' : 'Sans billets'})`],
                 ["Guide", o => `${o.guide.statut.toUpperCase()} (${o.guide.qualification})`],
                 ["Assurance", o => `${o.assurance.statut.toUpperCase()} (${o.assurance.type_couverture})`],
-                ["Annulation", o => `${o.annulation.flexibilite}`]
+                ["Annulation", o => `${o.annulation.flexibilite}`],
+                ["Taxes aéroport (voyage aérien)", o => {
+                    if (!o.transport.est_vol) return "Sans objet (transport terrestre/sans vol)";
+                    if (o.prix.taxes_aeroport_par_personne > 0) {
+                        return `${o.prix.taxes_aeroport_par_personne} € / pers en supplément (Forfait H.T : ${o.prix.prix_ht_par_personne} €)`;
+                    }
+                    return "Incluses forfaitaire (non ventilées)";
+                }]
             ];
 
             checks.forEach(([label, fn]) => {

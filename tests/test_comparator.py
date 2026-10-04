@@ -170,5 +170,23 @@ class TestComparateurTourisme(unittest.TestCase):
         self.assertGreater(len(score_eco.donnees_manquantes), 0)
         self.assertLess(score_eco.completude_donnees_pct, 100.0)
 
+    def test_airport_taxes_and_ht_price_breakdown(self):
+        """Vérifie la décomposition transparente entre Prix H.T et Taxes aéroport en supplément pour vol"""
+        raw_text = """
+        VOYAGE AFRIQUE DU SUD - 13 JOURS
+        Prix net TTC par personne en chambre double : 2 655 €
+        CE PRIX COMPREND :
+        - Les vols réguliers Lyon - Johannesburg
+        - Les taxes aéroport calculées à ce jour au départ de Lyon à 127€ avec Emirates
+        - L'hébergement en hôtels 4 étoiles
+        """
+        offer = parse_offer_text(raw_text, "test-taxe", "test", "test.txt")
+        self.assertTrue(offer.transport.est_vol)
+        self.assertEqual(offer.prix.taxes_aeroport_par_personne, 127.0)
+        self.assertEqual(offer.prix.taxes_aeroport, 254.0) # 2 personnes par défaut
+        self.assertEqual(offer.prix.prix_total_annonce, 5310.0) # 2 655 * 2
+        self.assertEqual(offer.prix.prix_ht, 5056.0) # 5310 - 254
+        self.assertEqual(offer.prix.prix_ht_par_personne, 2528.0) # 2655 - 127
+
 if __name__ == "__main__":
     unittest.main()

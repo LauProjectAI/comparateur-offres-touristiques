@@ -279,18 +279,6 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         if len(m_dates) >= 2:
             date_ret = m_dates[1]
 
-    prix = PriceDetail(
-        prix_total_annonce=prix_total,
-        devise="EUR",
-        nombre_personnes=nb_personnes,
-        taxes_incluses=True,
-        taxes_sejour_estimees=round(1.5 * duree_nuits * nb_personnes, 2) if "taxe" not in text_clean.lower() else 0.0,
-        frais_dossier=25.0 if "frais de dossier" in text_clean.lower() else 0.0,
-        supplements_connus=0.0,
-        source=SourceOrigin.VENDEUR,
-        source_detail=f"Extrait de la source ({source_ref})"
-    )
-
     # 4. Transport (Vol / Train / etc.)
     t_statut = ServiceStatus.NON_PRECISE
     compagnie = "Non précisée"
@@ -337,6 +325,61 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         compagnie_aerienne=compagnie,
         compagnie_nommee_clairement=compagnie_claire,
         details=t_desc,
+        source=SourceOrigin.VENDEUR,
+        source_detail=f"Extrait de la source ({source_ref})"
+    )
+
+    # Détection des taxes d'aéroport pour voyage aérien
+    taxes_aero_pers = 0.0
+    taxes_aero_statut = "non_applicable"
+    
+    if est_vol:
+        regex_taxes_aero = [
+            r'taxes\s+(?:d[\'’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
+            r'taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
+            r'dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d[\'’]\s*)?a[eé]ro',
+            r'redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)'
+        ]
+        for r_tax in regex_taxes_aero:
+            m_tax = re.search(r_tax, raw_text, re.IGNORECASE)
+            if m_tax:
+                val_tax = float(m_tax.group(1).replace(' ', '').replace(',', '.'))
+                if 15 <= val_tax <= 1500:
+                    taxes_aero_pers = val_tax
+                    taxes_aero_statut = "en_supplement"
+                    break
+        
+        if taxes_aero_pers == 0.0:
+            if re.search(r'taxes\s+(?:d[\'’]\s*|d\s+)?a[eé]roport|taxes\s+a[eé]riennes', raw_text, re.IGNORECASE):
+                taxes_aero_statut = "incluses_non_ventilees"
+
+    taxes_aero_total = round(taxes_aero_pers * nb_personnes, 2)
+    
+    # Calcul Prix HT vs TTC
+    if est_vol and taxes_aero_total > 0:
+        if re.search(r'prix\s+(?:net\s+)?ttc|ce\s+prix\s+comprend[\s\S]{1,1000}?taxes\s+a[eé]ro', raw_text, re.IGNORECASE):
+            prix_ht = round(max(0.0, prix_total - taxes_aero_total), 2)
+        else:
+            prix_ht = prix_total
+            prix_total = round(prix_total + taxes_aero_total, 2)
+    else:
+        prix_ht = prix_total
+        
+    prix_ht_pers = round(prix_ht / max(1, nb_personnes), 2)
+
+    prix = PriceDetail(
+        prix_total_annonce=prix_total,
+        devise="EUR",
+        nombre_personnes=nb_personnes,
+        taxes_incluses=True,
+        taxes_sejour_estimees=round(1.5 * duree_nuits * nb_personnes, 2) if ("taxe de séjour" in text_clean.lower() or "taxes de séjour" in text_clean.lower() or "taxe" not in text_clean.lower()) else 0.0,
+        frais_dossier=25.0 if "frais de dossier" in text_clean.lower() else 0.0,
+        supplements_connus=0.0,
+        taxes_aeroport=taxes_aero_total,
+        taxes_aeroport_par_personne=taxes_aero_pers,
+        taxes_aeroport_statut=taxes_aero_statut,
+        prix_ht=prix_ht,
+        prix_ht_par_personne=prix_ht_pers,
         source=SourceOrigin.VENDEUR,
         source_detail=f"Extrait de la source ({source_ref})"
     )

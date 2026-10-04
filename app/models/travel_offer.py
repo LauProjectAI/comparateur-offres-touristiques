@@ -102,6 +102,14 @@ class PriceDetail(BaseModel):
     taxes_sejour_estimees: float = 0.0
     frais_dossier: float = 0.0
     supplements_connus: float = 0.0
+    
+    # Présentation vol & taxes aéroport en supplément
+    taxes_aeroport: float = 0.0 # Total des taxes aéroport pour le dossier
+    taxes_aeroport_par_personne: float = 0.0 # Taxes aéroport par personne
+    taxes_aeroport_statut: str = "non_applicable" # "incluses_ventilees", "incluses_non_ventilees", "en_supplement", "non_applicable"
+    prix_ht: float = 0.0 # Prix hors taxes aéroport total dossier
+    prix_ht_par_personne: float = 0.0 # Prix hors taxes aéroport par personne
+
     prix_total_normalise: float = 0.0 # Total incluant frais connus
     prix_par_personne: float = 0.0
     prix_par_personne_par_nuit: float = 0.0

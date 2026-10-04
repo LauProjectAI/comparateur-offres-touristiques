@@ -98,6 +98,11 @@ def get_sample_offers_by_type(travel_type: TravelType) -> List[TravelOffer]:
                 taxes_sejour_estimees=24.0, # 6€/nuit/pers taxe séjour Rome
                 frais_dossier=0.0,
                 supplements_connus=0.0,
+                taxes_aeroport=120.0,
+                taxes_aeroport_par_personne=60.0,
+                taxes_aeroport_statut="en_supplement",
+                prix_ht=1720.0,
+                prix_ht_par_personne=860.0,
                 source=SourceOrigin.VENDEUR,
                 source_detail="Devis contractuel N°2026-CULT-84"
             ),
@@ -189,6 +194,11 @@ def get_sample_offers_by_type(travel_type: TravelType) -> List[TravelOffer]:
                 taxes_sejour_estimees=32.0, # 4€/nuit/pers
                 frais_dossier=35.0, # Frais de dossier du voyagiste en ligne
                 supplements_connus=67.0,
+                taxes_aeroport=100.0,
+                taxes_aeroport_par_personne=50.0,
+                taxes_aeroport_statut="en_supplement",
+                prix_ht=1090.0,
+                prix_ht_par_personne=545.0,
                 source=SourceOrigin.VENDEUR,
                 source_detail="Panier d'achat en ligne"
             ),

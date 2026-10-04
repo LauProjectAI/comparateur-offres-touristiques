@@ -329,9 +329,44 @@
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-3 gap-3 mb-4 text-xs">
+                                    <!-- Alerte et ventilation voyage aérien -->
+                                    <template x-if="currentOffer.transport.est_vol">
+                                        <div class="mb-3 p-2 bg-sky-50 border border-sky-200 rounded-lg text-xs text-sky-900 flex items-center justify-between">
+                                            <div class="flex items-center space-x-1.5">
+                                                <span>✈️</span>
+                                                <span class="font-bold">Voyage aérien :</span>
+                                                <span>Forfait décomposé en <strong>Prix H.T</strong> et <strong>Taxes aéroport</strong> (en supplément).</span>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Champs tarifaires pour voyage aérien -->
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4 text-xs" x-show="currentOffer.transport.est_vol">
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Prix annoncé (€)</label>
+                                            <label class="block font-medium text-slate-700 mb-1">Prix H.T total (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.prix_ht" @input="recalculatePrices(currentOffer, 'ht')" class="w-full font-bold text-slate-900 border border-slate-300 rounded p-1.5" title="Prix du forfait hors taxes d'aéroport">
+                                            <span class="text-[10px] text-slate-500" x-text="(currentOffer.prix.prix_ht_par_personne || 0) + ' € / pers'"></span>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-amber-900 mb-1">Taxes aéroport (€/p)</label>
+                                            <input type="number" x-model="currentOffer.prix.taxes_aeroport_par_personne" @input="recalculatePrices(currentOffer, 'taxes_aero')" class="w-full font-bold text-amber-900 border border-amber-300 bg-amber-50/50 rounded p-1.5" title="Taxes d'aéroport en supplément par passager">
+                                            <span class="text-[10px] text-amber-700" x-text="'+ ' + (currentOffer.prix.taxes_aeroport || 0) + ' € total'"></span>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-700 mb-1">Prix total TTC (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.prix_total_annonce" @input="recalculatePrices(currentOffer, 'total')" class="w-full font-bold text-brand-900 border border-slate-300 rounded p-1.5" title="Forfait TTC incluant taxes aéroport">
+                                            <span class="text-[10px] text-brand-700" x-text="Math.round(currentOffer.prix.prix_total_annonce / Math.max(1, currentOffer.prix.nombre_personnes)) + ' € / pers'"></span>
+                                        </div>
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Taxes séjour (€)</label>
+                                            <input type="number" x-model="currentOffer.prix.taxes_sejour_estimees" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
+                                        </div>
+                                    </div>
+
+                                    <!-- Champs tarifaires sans vol -->
+                                    <div class="grid grid-cols-3 gap-3 mb-4 text-xs" x-show="!currentOffer.transport.est_vol">
+                                        <div>
+                                            <label class="block font-medium text-slate-600 mb-1">Prix total (€)</label>
                                             <input type="number" x-model="currentOffer.prix.prix_total_annonce" @input="recalculatePrices(currentOffer)" class="w-full font-bold text-slate-900 border border-slate-300 rounded p-1.5">
                                         </div>
                                         <div>
@@ -345,19 +380,47 @@
                                     </div>
 
                                     <!-- Synthèse normalisée -->
-                                    <div class="bg-brand-50/50 border border-brand-100 rounded-lg p-3 grid grid-cols-3 gap-2 text-center text-xs">
-                                        <div>
-                                            <span class="text-[10px] text-slate-500 block">Total normalisé</span>
-                                            <span class="font-extrabold text-slate-900" x-text="currentOffer.prix.prix_total_normalise + ' €'"></span>
-                                        </div>
-                                        <div>
-                                            <span class="text-[10px] text-slate-500 block">Prix / personne</span>
-                                            <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne + ' €'"></span>
-                                        </div>
-                                        <div>
-                                            <span class="text-[10px] text-slate-500 block">Prix / pers. / nuit</span>
-                                            <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne_par_nuit + ' €/n'"></span>
-                                        </div>
+                                    <div class="bg-brand-50/50 border border-brand-100 rounded-lg p-3 text-center text-xs">
+                                        <template x-if="currentOffer.transport.est_vol">
+                                            <div class="grid grid-cols-4 gap-2">
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Prix H.T / pers</span>
+                                                    <span class="font-extrabold text-slate-900" x-text="currentOffer.prix.prix_ht_par_personne + ' €'"></span>
+                                                    <span class="text-[9px] text-slate-400 block" x-text="currentOffer.prix.prix_ht + ' € HT'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-amber-700 font-semibold block">Taxes aéro (suppl.)</span>
+                                                    <span class="font-bold text-amber-800" x-text="'+ ' + (currentOffer.prix.taxes_aeroport_par_personne || 0) + ' €'"></span>
+                                                    <span class="text-[9px] text-amber-600 block" x-text="'+ ' + (currentOffer.prix.taxes_aeroport || 0) + ' € total'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Total TTC / pers</span>
+                                                    <span class="font-extrabold text-brand-800" x-text="currentOffer.prix.prix_par_personne + ' €'"></span>
+                                                    <span class="text-[9px] text-brand-600 block" x-text="currentOffer.prix.prix_par_personne_par_nuit + ' €/n'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Total normalisé</span>
+                                                    <span class="font-extrabold text-slate-900" x-text="currentOffer.prix.prix_total_normalise + ' €'"></span>
+                                                    <span class="text-[9px] text-slate-500 block">Dossier complet</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!currentOffer.transport.est_vol">
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Total normalisé</span>
+                                                    <span class="font-extrabold text-slate-900" x-text="currentOffer.prix.prix_total_normalise + ' €'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Prix / personne</span>
+                                                    <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne + ' €'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] text-slate-500 block">Prix / pers. / nuit</span>
+                                                    <span class="font-bold text-brand-800" x-text="currentOffer.prix.prix_par_personne_par_nuit + ' €/n'"></span>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
 
@@ -810,14 +873,48 @@
                             
                             <!-- Prix normalisé -->
                             <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">Prix & Normalisation</td>
+                                <td class="p-3 font-bold text-slate-900">
+                                    <div>Prix & Normalisation</div>
+                                    <div class="text-[10px] text-slate-500 font-normal">Ventilation HT, taxes aéroport & total</div>
+                                </td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
                                     <td class="p-3 border-l border-slate-200">
-                                        <div class="text-sm font-extrabold text-brand-900" x-text="off.prix.prix_total_normalise + ' € total'"></div>
-                                        <div class="text-[11px] text-slate-600 font-semibold" x-text="off.prix.prix_par_personne + ' € / pers (' + off.prix.prix_par_personne_par_nuit + ' € / nuit)'"></div>
-                                        <div class="text-[10px] text-slate-500 mt-1">
-                                            Taxes : <span x-text="off.prix.taxes_sejour_estimees + ' €'"></span> | Frais dossier : <span x-text="off.prix.frais_dossier + ' €'"></span>
-                                        </div>
+                                        <template x-if="off.transport.est_vol">
+                                            <div class="space-y-1.5">
+                                                <div class="text-sm font-extrabold text-brand-900" x-text="off.prix.prix_total_normalise + ' € total TTC'"></div>
+                                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                                    <div class="flex justify-between items-center text-slate-700">
+                                                        <span>🔹 Forfait H.T :</span>
+                                                        <strong class="text-slate-900" x-text="off.prix.prix_ht_par_personne + ' € / pers'"></strong>
+                                                    </div>
+                                                    <div class="flex justify-between items-center text-amber-800">
+                                                        <span>✈ Taxes aéroport :</span>
+                                                        <template x-if="off.prix.taxes_aeroport_par_personne > 0">
+                                                            <span class="font-bold">+ <span x-text="off.prix.taxes_aeroport_par_personne"></span> € / pers <span class="text-[9px] font-normal text-amber-700">(en suppl.)</span></span>
+                                                        </template>
+                                                        <template x-if="!off.prix.taxes_aeroport_par_personne || off.prix.taxes_aeroport_par_personne === 0">
+                                                            <span class="text-[10px] text-slate-500 italic">Incluses (non ventilées)</span>
+                                                        </template>
+                                                    </div>
+                                                    <div class="flex justify-between items-center border-t border-slate-100 pt-1 text-slate-900 font-bold">
+                                                        <span>Total / pers :</span>
+                                                        <span class="text-brand-800" x-text="off.prix.prix_par_personne + ' €'"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="text-[10px] text-slate-500">
+                                                    Taxes séjour : <span x-text="off.prix.taxes_sejour_estimees + ' €'"></span> | Frais dossier : <span x-text="off.prix.frais_dossier + ' €'"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!off.transport.est_vol">
+                                            <div>
+                                                <div class="text-sm font-extrabold text-brand-900" x-text="off.prix.prix_total_normalise + ' € total'"></div>
+                                                <div class="text-[11px] text-slate-600 font-semibold" x-text="off.prix.prix_par_personne + ' € / pers (' + off.prix.prix_par_personne_par_nuit + ' € / nuit)'"></div>
+                                                <div class="text-[10px] text-slate-500 mt-1">
+                                                    Taxes séjour : <span x-text="off.prix.taxes_sejour_estimees + ' €'"></span> | Frais dossier : <span x-text="off.prix.frais_dossier + ' €'"></span>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </td>
                                 </template>
                             </tr>

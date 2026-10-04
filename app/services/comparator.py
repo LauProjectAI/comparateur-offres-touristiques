@@ -29,8 +29,8 @@ def detect_scope_differences(offers: List[TravelOffer]) -> List[ScopeDifference]
         ("Visites et activités", lambda o: f"{o.activites.statut.value.capitalize()} ({'Billets inclus' if o.activites.billets_inclus else 'Accès standard/libre'})"),
         ("Guide / Accompagnateur", lambda o: f"{o.guide.statut.value.capitalize()} ({o.guide.qualification})"),
         ("Assurance", lambda o: f"{o.assurance.statut.value.capitalize()} ({o.assurance.type_couverture})"),
-        ("Flexibilité d'annulation", lambda o: f"{o.annulation.flexibilite}"),
-        ("Taxes et frais inclus", lambda o: "Inclus" if o.prix.taxes_incluses and o.prix.frais_dossier == 0 else f"Frais dossier: {o.prix.frais_dossier}€ / Taxes: {o.prix.taxes_sejour_estimees}€")
+        ("Taxes et frais inclus", lambda o: "Inclus" if o.prix.taxes_incluses and o.prix.frais_dossier == 0 else f"Frais dossier: {o.prix.frais_dossier}€ / Taxes: {o.prix.taxes_sejour_estimees}€"),
+        ("Taxes aéroport (voyage aérien)", lambda o: (f"{o.prix.taxes_aeroport_par_personne} € / pers en supplément (Forfait H.T : {o.prix.prix_ht_par_personne} €)" if o.prix.taxes_aeroport_par_personne > 0 else "Incluses forfaitaire (non ventilées)") if o.transport.est_vol else "Sans objet (transport terrestre/sans vol)")
     ]
 
     for label, extractor in checks:

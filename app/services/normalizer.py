@@ -12,11 +12,39 @@ def normalize_offer_prices(offer: TravelOffer) -> TravelOffer:
     - Prix total normalisé incluant frais de dossier et taxes connues
     - Prix par personne
     - Prix par personne et par nuit
+    - Ventilation Prix H.T et Taxes aéroport en supplément pour les voyages aériens
     """
     p = offer.prix
     nb_pers = max(1, p.nombre_personnes)
     nuits = max(1, offer.duree_nuits)
     
+    # Détection voyage aérien
+    est_vol = getattr(offer.transport, 'est_vol', False) or 'vol' in str(offer.transport.type_transport).lower()
+
+    if est_vol:
+        # Harmonisation montant par personne et total dossier des taxes aéroport
+        if p.taxes_aeroport_par_personne > 0 and p.taxes_aeroport == 0:
+            p.taxes_aeroport = round(p.taxes_aeroport_par_personne * nb_pers, 2)
+        elif p.taxes_aeroport > 0 and p.taxes_aeroport_par_personne == 0:
+            p.taxes_aeroport_par_personne = round(p.taxes_aeroport / nb_pers, 2)
+
+        # Calcul ou réconciliation du Prix H.T et du Prix Total
+        if p.taxes_aeroport > 0:
+            if p.prix_ht == 0 and p.prix_total_annonce >= p.taxes_aeroport:
+                p.prix_ht = round(p.prix_total_annonce - p.taxes_aeroport, 2)
+            elif p.prix_ht > 0 and p.prix_total_annonce == 0:
+                p.prix_total_annonce = round(p.prix_ht + p.taxes_aeroport, 2)
+        else:
+            if p.prix_ht == 0:
+                p.prix_ht = p.prix_total_annonce
+        
+        p.prix_ht_par_personne = round(p.prix_ht / nb_pers, 2)
+    else:
+        p.prix_ht = p.prix_total_annonce
+        p.prix_ht_par_personne = round(p.prix_total_annonce / nb_pers, 2)
+        p.taxes_aeroport = 0.0
+        p.taxes_aeroport_par_personne = 0.0
+
     # Calcul du coût réel connu
     supplements = p.frais_dossier + p.taxes_sejour_estimees + p.supplements_connus
     total_reel = p.prix_total_annonce + supplements
