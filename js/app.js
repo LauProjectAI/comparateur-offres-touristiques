@@ -19,6 +19,13 @@ document.addEventListener('alpine:init', () => {
         isDragging: false,
         activeTabOfferIndex: 0,
         
+        // Cartographie interactive des circuits
+        itineraryData: null,
+        mapInstance: null,
+        mapFeatureGroup: null,
+        mapFilter: 'all', // 'all', 'offer0', 'offer1'
+        selectedStepId: null,
+        
         // Pondérations transparentes du score
         weights: {
             poids_prix: 25,
@@ -1134,10 +1141,180 @@ document.addEventListener('alpine:init', () => {
                 this.step = 3;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
+                // Initialisation différée de la carte pour s'adapter à la visibilité DOM
+                setTimeout(() => {
+                    this.initItineraryMap();
+                }, 300);
+
             } catch (err) {
                 this.errorMessage = "Erreur lors du calcul : " + err.message;
             } finally {
                 this.loading = false;
+            }
+        },
+
+        // Cartographie interactive des circuits & étapes
+        initItineraryMap() {
+            const container = document.getElementById('itineraryMap');
+            if (!container) return;
+
+            // Détection de l'itinéraire correspondant aux offres
+            const itin = typeof detectMatchingItinerary === 'function' ? detectMatchingItinerary(this.offers) : null;
+            if (!itin) return;
+            this.itineraryData = itin;
+
+            if (this.mapInstance) {
+                try {
+                    this.mapInstance.remove();
+                } catch(e) {}
+                this.mapInstance = null;
+            }
+
+            // Création de l'instance Leaflet
+            const map = L.map('itineraryMap', {
+                center: itin.center,
+                zoom: itin.zoom,
+                scrollWheelZoom: false
+            });
+            this.mapInstance = map;
+
+            // Couche OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            this.renderMapLayers();
+
+            setTimeout(() => {
+                map.invalidateSize();
+                this.resetMapView();
+            }, 300);
+        },
+
+        renderMapLayers() {
+            if (!this.mapInstance || !this.itineraryData) return;
+            const map = this.mapInstance;
+            const itin = this.itineraryData;
+
+            if (this.mapFeatureGroup) {
+                map.removeLayer(this.mapFeatureGroup);
+            }
+            this.mapFeatureGroup = L.featureGroup().addTo(map);
+
+            const steps = itin.steps;
+
+            // 1. Tracé Circuit 1 (Bleu / Indigo)
+            if (this.mapFilter === 'all' || this.mapFilter === 'offer0') {
+                const line0 = steps.map(s => s.coords);
+                const poly0 = L.polyline(line0, {
+                    color: '#4f46e5',
+                    weight: 4,
+                    opacity: 0.85,
+                    lineJoin: 'round'
+                });
+                this.mapFeatureGroup.addLayer(poly0);
+            }
+
+            // 2. Tracé Circuit 2 (Émeraude / Vert)
+            if (this.mapFilter === 'all' || this.mapFilter === 'offer1') {
+                const offset = (this.mapFilter === 'all') ? 0.04 : 0.0;
+                const line1 = steps.map(s => [s.coords[0] + offset, s.coords[1] + offset]);
+                const poly1 = L.polyline(line1, {
+                    color: '#059669',
+                    weight: 4,
+                    opacity: 0.85,
+                    dashArray: (this.mapFilter === 'all') ? '8, 6' : null,
+                    lineJoin: 'round'
+                });
+                this.mapFeatureGroup.addLayer(poly1);
+            }
+
+            // 3. Liaison aérienne intérieure (ex: Durban -> Le Cap)
+            if (itin.flightPath && (this.mapFilter === 'all' || this.mapFilter === 'offer0' || this.mapFilter === 'offer1')) {
+                const flightLine = L.polyline(itin.flightPath, {
+                    color: '#0284c7',
+                    weight: 3,
+                    dashArray: '5, 8',
+                    opacity: 0.85
+                });
+                this.mapFeatureGroup.addLayer(flightLine);
+            }
+
+            // 4. Marqueurs interactifs avec popups comparatifs
+            steps.forEach((step, idx) => {
+                const num = idx + 1;
+                let pinHtml = '';
+                if (this.mapFilter === 'offer0') {
+                    pinHtml = `<div style="background-color:#4f46e5;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${num}</div>`;
+                } else if (this.mapFilter === 'offer1') {
+                    pinHtml = `<div style="background-color:#059669;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${num}</div>`;
+                } else {
+                    pinHtml = `<div style="background:linear-gradient(135deg, #4f46e5 50%, #059669 50%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.35);">${num}</div>`;
+                }
+
+                const icon = L.divIcon({
+                    className: 'custom-map-pin',
+                    html: pinHtml,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14],
+                    popupAnchor: [0, -14]
+                });
+
+                const marker = L.marker(step.coords, { icon });
+
+                const t0 = this.offers[0] ? this.offers[0].titre : (step.offer0?.title || "Offre 1");
+                const t1 = this.offers[1] ? this.offers[1].titre : (step.offer1?.title || "Offre 2");
+
+                const popup = `
+                    <div style="font-family:system-ui,-apple-system,sans-serif;min-width:240px;max-width:300px;font-size:12px;line-height:1.4;">
+                        <div style="font-weight:800;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:5px;margin-bottom:8px;">
+                            Étape ${num} : ${step.name} <span style="color:#64748b;font-weight:normal;font-size:11px;">(${step.day})</span>
+                        </div>
+                        <div style="margin-bottom:8px;background:#f8fafc;padding:6px 8px;border-radius:6px;border-left:3px solid #4f46e5;">
+                            <strong style="color:#4338ca;font-size:11px;display:block;">${t0}</strong>
+                            <div style="color:#334155;font-size:11px;margin-top:2px;">${step.offer0?.desc || ''}</div>
+                            <div style="color:#64748b;font-size:10px;margin-top:3px;">🏨 <i>${step.offer0?.hotel || 'Hôtel du circuit'}</i></div>
+                        </div>
+                        <div style="background:#f8fafc;padding:6px 8px;border-radius:6px;border-left:3px solid #059669;">
+                            <strong style="color:#047857;font-size:11px;display:block;">${t1}</strong>
+                            <div style="color:#334155;font-size:11px;margin-top:2px;">${step.offer1?.desc || ''}</div>
+                            <div style="color:#64748b;font-size:10px;margin-top:3px;">🏨 <i>${step.offer1?.hotel || 'Hôtel du circuit'}</i></div>
+                        </div>
+                    </div>
+                `;
+                marker.bindPopup(popup);
+                marker.on('click', () => {
+                    this.selectedStepId = step.id;
+                });
+
+                this.mapFeatureGroup.addLayer(marker);
+            });
+        },
+
+        setMapCircuitFilter(filter) {
+            this.mapFilter = filter;
+            this.renderMapLayers();
+        },
+
+        resetMapView() {
+            if (!this.mapInstance || !this.mapFeatureGroup) return;
+            const bounds = this.mapFeatureGroup.getBounds();
+            if (bounds.isValid()) {
+                this.mapInstance.fitBounds(bounds, { padding: [35, 35] });
+            }
+        },
+
+        focusStep(step) {
+            this.selectedStepId = step.id;
+            if (!this.mapInstance) return;
+            this.mapInstance.flyTo(step.coords, 9, { duration: 1.0 });
+            if (this.mapFeatureGroup) {
+                this.mapFeatureGroup.eachLayer(layer => {
+                    if (layer.getLatLng && Math.abs(layer.getLatLng().lat - step.coords[0]) < 0.01 && Math.abs(layer.getLatLng().lng - step.coords[1]) < 0.01) {
+                        layer.openPopup();
+                    }
+                });
             }
         },
 
