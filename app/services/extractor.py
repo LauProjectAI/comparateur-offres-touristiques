@@ -148,42 +148,90 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     # 3. Prix et devises
     prix_total = 0.0
     is_price_per_person = False
+    raw_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
 
-    # Priorité 1 : Recherche d'un libellé explicite de prix (ex: "Prix net TTC par personne : 2 655 €", "Prix total : 1950 €")
-    m_explicit_price = re.search(
-        r'(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)',
-        text_clean,
-        re.IGNORECASE
-    )
-    if m_explicit_price:
-        p_val_str = m_explicit_price.group(1).replace(' ', '').replace(',', '.')
-        try:
-            val = float(p_val_str)
-            if 50 <= val <= 50000:
-                prix_total = val
-                if re.search(r'par\s+personne|en\s+chambre\s+double|\/pers|\/pax|p\/p', m_explicit_price.group(0), re.IGNORECASE):
-                    is_price_per_person = True
-        except ValueError:
-            pass
+    # Stratégie 1 : Tableaux structurés (lignes contenant des séparateurs |)
+    # Permet de détecter les devis où l'en-tête (ex: 'Prix par personne en double') est sur une ligne
+    # et le tarif (ex: '2 420 €') sur la ligne suivante.
+    for i, line in enumerate(raw_lines):
+        if '|' in line and any(k in line.lower() for k in ['prix', 'tarif', 'montant']):
+            headers = [c.strip() for c in line.split('|')]
+            for offset in range(1, 4):
+                if i + offset < len(raw_lines) and '|' in raw_lines[i + offset]:
+                    vals = [c.strip() for c in raw_lines[i + offset].split('|')]
+                    for col_idx, h in enumerate(headers):
+                        h_low = h.lower()
+                        if any(k in h_low for k in ['prix', 'tarif', 'montant']) and not any(k in h_low for k in ['supplément', 'supplement', 'single', 'individuelle']):
+                            if col_idx < len(vals):
+                                cell_val = vals[col_idx]
+                                m_c = re.search(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)', cell_val)
+                                if m_c:
+                                    val_t = float(m_c.group(1).replace(' ', '').replace(',', '.'))
+                                    if 150 <= val_t <= 50000:
+                                        prix_total = val_t
+                                        if any(k in h_low for k in ['par personne', 'p/p', 'par pax', 'en double', 'double', 'adulte']):
+                                            is_price_per_person = True
+                                        break
+                    if prix_total > 0:
+                        break
+        if prix_total > 0:
+            break
 
-    # Priorité 2 : Si aucun prix libellé, analyser tous les montants
+    # Stratégie 2 : Libellé explicite sur la même ligne (ex: "Prix net TTC par personne : 2 655 €", "Prix total : 1950 €")
     if prix_total == 0.0:
-        m_prix = re.findall(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)', text_clean, re.IGNORECASE)
-        if m_prix:
-            candidats = []
-            for p_str in m_prix:
-                cleaned = p_str.replace(' ', '').replace(',', '.')
-                try:
-                    val = float(cleaned)
-                    if 150 <= val <= 35000:
-                        candidats.append(val)
-                except ValueError:
-                    pass
-            if candidats:
-                grands = [v for v in candidats if v >= 300]
-                prix_total = grands[0] if grands else candidats[-1]
+        m_explicit_price = re.search(
+            r'(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros|CHF|\$)',
+            text_clean,
+            re.IGNORECASE
+        )
+        if m_explicit_price:
+            p_val_str = m_explicit_price.group(1).replace(' ', '').replace(',', '.')
+            try:
+                val = float(p_val_str)
+                if 150 <= val <= 50000:
+                    prix_total = val
+                    if re.search(r'par\s+personne|en\s+chambre\s+double|\/pers|\/pax|p\/p', m_explicit_price.group(0), re.IGNORECASE):
+                        is_price_per_person = True
+            except ValueError:
+                pass
 
-    # Nombre de personnes (défaut = 2 pour base chambre double)
+    # Stratégie 3 : Détection multi-lignes (en-tête "Prix par personne" suivi à quelques lignes par le montant)
+    if prix_total == 0.0:
+        for idx, r_line in enumerate(raw_lines):
+            if re.search(r'^(?:prix|tarif)\s*(?:par\s*personne|p\/p|en\s*double|ttc)?', r_line, re.IGNORECASE) and not re.search(r'suppl[eé]ment|chambre\s+individuelle|boisson', r_line, re.IGNORECASE):
+                for next_l in raw_lines[idx+1 : idx+6]:
+                    if re.search(r'suppl[eé]ment|single|individuelle|\+', next_l, re.IGNORECASE):
+                        continue
+                    m_p = re.search(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)', next_l)
+                    if m_p:
+                        v = float(m_p.group(1).replace(' ', '').replace(',', '.'))
+                        if 300 <= v <= 50000:
+                            prix_total = v
+                            if re.search(r'par\s*personne|en\s*double|p\/p|pax', r_line, re.IGNORECASE):
+                                is_price_per_person = True
+                            break
+                if prix_total > 0:
+                    break
+
+    # Stratégie 4 : Scan des montants globaux en éliminant les suppléments ("+ 340 €", "+ 330 €", pourboires...)
+    if prix_total == 0.0:
+        candidats = []
+        for m in re.finditer(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)', text_clean):
+            p_val = float(m.group(1).replace(' ', '').replace(',', '.'))
+            if 200 <= p_val <= 35000:
+                start_ctx = max(0, m.start() - 30)
+                ctx = text_clean[start_ctx : m.end()].lower()
+                if not re.search(r'\+\s*|suppl[eé]ment|r[eé]duction|taxe|pourboire|frais', ctx):
+                    candidats.append((p_val, m.start()))
+        if candidats:
+            grands = [c for c in candidats if c[0] >= 500]
+            chosen = grands[0] if grands else candidats[-1]
+            prix_total = chosen[0]
+            around = text_clean[max(0, chosen[1]-150) : min(len(text_clean), chosen[1]+150)].lower()
+            if any(k in around for k in ['par personne', 'en double', 'p/p', 'par pax', 'chambre double']):
+                is_price_per_person = True
+
+    # Nombre de personnes (défaut = 2 pour base chambre double standard)
     nb_personnes = 2
     m_pers = re.search(r'(?:pour|devis\s+pour|groupe\s+de)\s+(\d+)\s*(?:personnes?|voyageurs?|adultes?|pax)', text_clean, re.IGNORECASE)
     if m_pers:
@@ -194,7 +242,7 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         except ValueError:
             pass
 
-    # Si le prix extrait était expressément par personne, calculer le total correspondant pour le nombre de personnes
+    # Si le prix extrait était expressément par personne, calculer le total correspondant pour le dossier
     if is_price_per_person and prix_total > 0:
         prix_total = round(prix_total * nb_personnes, 2)
 
@@ -300,17 +348,19 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     h_adresse = "Localisation générale indiquée dans le programme"
     h_standing = "Non précisé"
 
-    # Vérification présence d'une section explicite d'hôtels (ex: "HOTELS OU SIMILAIRE")
-    m_sec_hotels = re.search(r'(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DES\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,600}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|$)', raw_text, re.IGNORECASE)
+    # Vérification présence d'une section explicite d'hôtels (ex: "HOTELS OU SIMILAIRE", "Liste de vos hôtels")
+    m_sec_hotels = re.search(r'(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DE(?:S|\s+VOS)\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,1500}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|\n\s*CONDITIONS?|\n\s*IMPORTANT|$)', raw_text, re.IGNORECASE)
     if m_sec_hotels:
         h_statut = ServiceStatus.INCLUS
         sec_lines = [l.strip() for l in m_sec_hotels.group(0).splitlines() if l.strip()]
-        hotel_lines = [l for l in sec_lines if not re.search(r'donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+des', l, re.IGNORECASE)]
+        hotel_lines = [l for l in sec_lines if not re.search(r'donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+de', l, re.IGNORECASE)]
         clean_hotels = []
         for hl in hotel_lines:
             clean_hl = re.sub(r'\s+', ' ', hl).strip()
-            if len(clean_hl) > 5 and not clean_hl.startswith('('):
-                clean_hotels.append(clean_hl)
+            if 5 < len(clean_hl) < 100:
+                if not re.search(r'^(?:\(|\*|-|il n|chaque|si l|veuillez)', clean_hl, re.IGNORECASE):
+                    if not re.search(r'disponibilit|proposition|alternative|tarifaire|accord', clean_hl, re.IGNORECASE):
+                        clean_hotels.append(clean_hl)
         if clean_hotels:
             h_nom = " / ".join(clean_hotels[:4])
             h_type = "Circuit / Hôtels & Lodges"
@@ -361,8 +411,10 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         r_formule = RestaurationMealPlan.FB
         r_statut = ServiceStatus.INCLUS
         r_desc = "Pension Complète (Full Board)"
-        if "boisson" in lower_text:
+        if re.search(r'boissons?\s+inclus|forfait\s+boissons?\s*:\s*1\s*(?:bi[eè]re|verre|soft)', lower_text):
             r_desc += " (avec forfait boissons inclus)"
+        elif re.search(r'forfait\s+boissons?\s*:\s*\d+\s*€|boissons?\s+en\s+suppl[eé]ment|hors\s+boissons?', lower_text):
+            r_desc += " (hors boissons / forfait boissons en supplément)"
     elif "demi-pension" in lower_text or "half board" in lower_text:
         r_formule = RestaurationMealPlan.HB
         r_statut = ServiceStatus.INCLUS

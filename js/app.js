@@ -408,31 +408,106 @@ document.addEventListener('alpine:init', () => {
             // 5. Prix et devises avec détection prix par personne
             let prixTotal = 0;
             let isPricePerPerson = false;
+            const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-            // Priorité 1 : Recherche de libellé explicite
-            const mExplicitPrice = rawText.match(/(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/i);
-            if (mExplicitPrice) {
-                const cleanP = mExplicitPrice[1].replace(/[^\d,\.]/g, '').replace(',', '.');
-                const val = parseFloat(cleanP);
-                if (val >= 50 && val <= 50000) {
-                    prixTotal = val;
-                    if (/par\s*personne|en\s*chambre\s*double|\/pers|\/pax|p\/p/i.test(mExplicitPrice[0])) {
-                        isPricePerPerson = true;
+            // Stratégie 1 : Tableaux structurés ou lignes avec délimiteur |
+            for (let i = 0; i < rawLines.length; i++) {
+                const line = rawLines[i];
+                if (line.includes('|') && /(?:prix|tarif|montant)/i.test(line)) {
+                    const headers = line.split('|').map(c => c.trim());
+                    for (let offset = 1; offset <= 3; offset++) {
+                        if (i + offset < rawLines.length && rawLines[i + offset].includes('|')) {
+                            const vals = rawLines[i + offset].split('|').map(c => c.trim());
+                            for (let colIdx = 0; colIdx < headers.length; colIdx++) {
+                                const hLow = headers[colIdx].toLowerCase();
+                                if (/(?:prix|tarif|montant)/i.test(hLow) && !/(?:supplément|supplement|single|individuelle)/i.test(hLow)) {
+                                    if (colIdx < vals.length) {
+                                        const cellVal = vals[colIdx];
+                                        const mC = cellVal.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/i);
+                                        if (mC) {
+                                            const valT = parseFloat(mC[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                                            if (valT >= 150 && valT <= 50000) {
+                                                prixTotal = valT;
+                                                if (/(?:par personne|p\/p|par pax|en double|double|adulte)/i.test(hLow)) {
+                                                    isPricePerPerson = true;
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (prixTotal > 0) break;
+                        }
+                    }
+                }
+                if (prixTotal > 0) break;
+            }
+
+            // Stratégie 2 : Libellé explicite sur la même ligne (ex: "Prix net TTC par personne : 2 655 €", "Prix total : 1950 €")
+            if (prixTotal === 0) {
+                const mExplicitPrice = rawText.match(/(?:prix(?:\s+net)?(?:\s+ttc|\s+ht)?(?:\s+pour\s+\d+\s+personnes?)?(?:\s+par\s+personne|\s+p\/p)?(?:\s+en\s+chambre\s+double)?|tarif(?:\s+par\s+personne)?|montant\s+total)\s*[:\-]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/i);
+                if (mExplicitPrice) {
+                    const cleanP = mExplicitPrice[1].replace(/[^\d,\.]/g, '').replace(',', '.');
+                    const val = parseFloat(cleanP);
+                    if (val >= 150 && val <= 50000) {
+                        prixTotal = val;
+                        if (/par\s*personne|en\s*chambre\s*double|\/pers|\/pax|p\/p/i.test(mExplicitPrice[0])) {
+                            isPricePerPerson = true;
+                        }
                     }
                 }
             }
 
-            // Priorité 2 : Scan des montants s'il n'y a pas de libellé explicite
+            // Stratégie 3 : Détection multi-lignes (en-tête "Prix par personne" suivi à quelques lignes par le montant)
             if (prixTotal === 0) {
-                const prixMatches = rawText.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/gi);
-                if (prixMatches) {
-                    const vals = prixMatches.map(m => {
-                        const clean = m.replace(/[^\d,\.]/g, '').replace(',', '.');
-                        return parseFloat(clean);
-                    }).filter(v => v >= 150 && v <= 35000);
-                    if (vals.length > 0) {
-                        const grands = vals.filter(v => v >= 300);
-                        prixTotal = grands.length > 0 ? grands[0] : vals[vals.length - 1];
+                for (let idx = 0; idx < rawLines.length; idx++) {
+                    const rLine = rawLines[idx];
+                    if (/^(?:prix|tarif)\s*(?:par\s*personne|p\/p|en\s*double|ttc)?/i.test(rLine) && !/(?:suppl[eé]ment|chambre\s+individuelle|boisson)/i.test(rLine)) {
+                        for (let offset = 1; offset <= 5; offset++) {
+                            if (idx + offset < rawLines.length) {
+                                const nextL = rawLines[idx + offset];
+                                if (/suppl[eé]ment|single|individuelle|\+/i.test(nextL)) continue;
+                                const mP = nextL.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/i);
+                                if (mP) {
+                                    const v = parseFloat(mP[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                                    if (v >= 300 && v <= 50000) {
+                                        prixTotal = v;
+                                        if (/par\s*personne|en\s*double|p\/p|pax/i.test(rLine)) {
+                                            isPricePerPerson = true;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (prixTotal > 0) break;
+                    }
+                }
+            }
+
+            // Stratégie 4 : Scan des montants globaux en éliminant les suppléments (+ 340 €, + 330 €, pourboires...)
+            if (prixTotal === 0) {
+                const regexScan = /(\d+[\s\.,]?\d*)\s*(?:€|EUR|euros)/gi;
+                let match;
+                const candidats = [];
+                while ((match = regexScan.exec(rawText)) !== null) {
+                    const pVal = parseFloat(match[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                    if (pVal >= 200 && pVal <= 35000) {
+                        const startCtx = Math.max(0, match.index - 30);
+                        const ctx = rawText.substring(startCtx, match.index + match[0].length).toLowerCase();
+                        if (!/\+\s*|suppl[eé]ment|r[eé]duction|taxe|pourboire|frais/i.test(ctx)) {
+                            candidats.push({ val: pVal, idx: match.index });
+                        }
+                    }
+                }
+                if (candidats.length > 0) {
+                    const grands = candidats.filter(c => c.val >= 500);
+                    const chosen = grands.length > 0 ? grands[0] : candidats[candidats.length - 1];
+                    prixTotal = chosen.val;
+                    const around = rawText.substring(Math.max(0, chosen.idx - 150), Math.min(rawText.length, chosen.idx + 150)).toLowerCase();
+                    if (/par\s*personne|en\s*double|p\/p|par\s*pax|chambre\s*double/i.test(around)) {
+                        isPricePerPerson = true;
                     }
                 }
             }
@@ -493,10 +568,20 @@ document.addEventListener('alpine:init', () => {
             else if (lower.includes('3 étoiles') || lower.includes('3*')) standing = '3 étoiles';
 
             let nomHeb = 'Hôtel ou hébergements mentionnés dans le dossier';
-            const mSecHotels = rawText.match(/(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DES\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,600}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|$)/i);
+            const mSecHotels = rawText.match(/(?:H[OÔ]TELS?\s+OU\s+SIMILAIRES?|LISTE\s+DE(?:S|\s+VOS)\s+H[OÔ]TELS?|VOS\s+H[OÔ]TELS?|H[EÉ]BERGEMENT)[\s\S]{1,1500}?(?=\n\s*[A-Z\s]{4,}:|\n\s*CE PRIX|\n\s*CHARMES|\n\s*TARIFS?|\n\s*CONDITIONS?|\n\s*IMPORTANT|$)/i);
             if (mSecHotels) {
-                const secLines = mSecHotels[0].split('\n').map(l => l.trim()).filter(l => l.length > 5 && !/(?:donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+des)/i.test(l));
-                const cleanHotels = secLines.map(l => l.replace(/\s+/g, ' ')).filter(l => !l.startsWith('('));
+                const secLines = mSecHotels[0].split('\n').map(l => l.trim()).filter(l => l.length > 5 && !/(?:donn[eé]s?\s+[aà]\s+titre|hotels?\s+ou|liste\s+de)/i.test(l));
+                const cleanHotels = [];
+                for (const hl of secLines) {
+                    const cleanHl = hl.replace(/\s+/g, ' ').trim();
+                    if (cleanHl.length > 5 && cleanHl.length < 100) {
+                        if (!/^(?:\(|\*|-|il n|chaque|si l|veuillez)/i.test(cleanHl)) {
+                            if (!/disponibilit|proposition|alternative|tarifaire|accord/i.test(cleanHl)) {
+                                cleanHotels.push(cleanHl);
+                            }
+                        }
+                    }
+                }
                 if (cleanHotels.length > 0) {
                     nomHeb = cleanHotels.slice(0, 4).join(' / ');
                 }
@@ -512,8 +597,12 @@ document.addEventListener('alpine:init', () => {
             else if (lower.includes('demi-pension') || lower.includes('half board')) formule = 'Half Board';
             else if (lower.includes('sans repas')) formule = 'Sans repas';
             let descRepas = `Formule ${formule}`;
-            if (formule === 'Full Board' && lower.includes('boisson')) {
-                descRepas = "Pension Complète avec forfait boissons inclus";
+            if (formule === 'Full Board') {
+                if (/boissons?\s+inclus|forfait\s+boissons?\s*:\s*1\s*(?:bi[eè]re|verre|soft)/i.test(lower)) {
+                    descRepas = "Pension Complète avec forfait boissons inclus";
+                } else if (/forfait\s+boissons?\s*:\s*\d+\s*€|boissons?\s+en\s+suppl[eé]ment|hors\s+boissons?/i.test(lower)) {
+                    descRepas = "Pension Complète (hors boissons / forfait boissons en supplément)";
+                }
             }
 
             // 10. Billets & Activités
