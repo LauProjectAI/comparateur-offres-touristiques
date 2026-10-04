@@ -1,9 +1,163 @@
-/* Styles spécifiques et optimisation de l'impression */
+/* ======================================================== */
+/* DESIGN SYSTEM : BENTO DARK PREMIUM & TRAVEL TECH LUXE    */
+/* ======================================================== */
+
+/* Fond d'ambiance avec mesh gradient subtil */
+body.dark-premium {
+    background-color: #07090e;
+    background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(20, 184, 166, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+/* Carte Bento avec verre dépoli et lueur intérieure */
+.bento-card {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    border-radius: 1.25rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bento-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Cellules Bento internes */
+.bento-cell {
+    background: rgba(2, 6, 23, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.bento-cell:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Badges de statut en Dark Premium Neon */
+.badge-inclus {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.badge-en_supplement {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.badge-absent {
+    background-color: rgba(244, 63, 94, 0.15);
+    color: #fb7185;
+    border: 1px solid rgba(251, 113, 133, 0.3);
+}
+
+.badge-non_precise {
+    background-color: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Badges de traçabilité des sources */
+.badge-source-vendeur {
+    background-color: rgba(14, 165, 233, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.badge-source-externe {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.badge-source-deduction {
+    background-color: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+}
+
+.badge-source-nonverifie {
+    background-color: rgba(100, 116, 139, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Scrollbars modernes et discrètes */
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* Leaflet Dark Matter Styling */
+.leaflet-container {
+    background-color: #0c121e !important;
+}
+
+.leaflet-popup-content-wrapper {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    color: #f1f5f9 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 8px 10px -6px rgba(0, 0, 0, 0.6) !important;
+    border-radius: 14px !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(15, 23, 42, 0.95) !important;
+}
+
+.leaflet-popup-close-button {
+    color: #94a3b8 !important;
+}
+
+.leaflet-popup-close-button:hover {
+    color: #ffffff !important;
+}
+
+/* Transitions fluides */
+.transition-smooth {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Optimisation de l'impression (Papier blanc propre, pas de toner noir gaspillé) */
 @media print {
-    body {
+    body, body.dark-premium {
         background: #ffffff !important;
+        background-image: none !important;
         color: #000000 !important;
-        font-size: 11pt;
+        font-size: 10pt;
+    }
+    .bento-card, .bento-cell {
+        background: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        box-shadow: none !important;
+        color: #000000 !important;
+        backdrop-filter: none !important;
+    }
+    .bento-card * {
+        color: #000000 !important;
+        text-shadow: none !important;
     }
     .no-print {
         display: none !important;
@@ -19,49 +173,24 @@
     .page-break {
         page-break-before: always;
     }
-}
-
-/* Badge de statut pour les prestations */
-.badge-inclus {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
-}
-.badge-en_supplement {
-    background-color: #ffedd5;
-    color: #9a3412;
-    border: 1px solid #fed7aa;
-}
-.badge-absent {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-}
-.badge-non_precise {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border: 1px solid #e5e7eb;
-}
-
-/* Badge d'origine de source */
-.badge-source-vendeur {
-    background-color: #e0f2fe;
-    color: #0369a1;
-}
-.badge-source-externe {
-    background-color: #fef3c7;
-    color: #92400e;
-}
-.badge-source-deduction {
-    background-color: #ede9fe;
-    color: #6d28d9;
-}
-.badge-source-nonverifie {
-    background-color: #f1f5f9;
-    color: #64748b;
-}
-
-/* Transitions douces */
-.transition-smooth {
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    .badge-inclus {
+        background-color: #dcfce7 !important;
+        color: #166534 !important;
+        border: 1px solid #bbf7d0 !important;
+    }
+    .badge-en_supplement {
+        background-color: #ffedd5 !important;
+        color: #9a3412 !important;
+        border: 1px solid #fed7aa !important;
+    }
+    .badge-absent {
+        background-color: #fee2e2 !important;
+        color: #991b1b !important;
+        border: 1px solid #fecaca !important;
+    }
+    .badge-non_precise {
+        background-color: #f3f4f6 !important;
+        color: #4b5563 !important;
+        border: 1px solid #e5e7eb !important;
+    }
 }

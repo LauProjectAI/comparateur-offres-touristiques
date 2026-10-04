@@ -37,41 +37,41 @@
     <!-- Script d'application -->
     <script src="/static/js/app.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans" x-data="comparatorApp()">
+<body class="dark-premium text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 antialiased" x-data="comparatorApp()">
 
     <!-- Header Professionnel & Neutre -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
+    <header class="bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 shadow-2xl shadow-black/50 no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-teal-500 flex items-center justify-center text-white shadow-md font-bold text-lg">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 via-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/25 font-bold text-lg border border-white/20">
                     ✈
                 </div>
                 <div>
-                    <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <h1 class="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                         Comparateur d'Offres Touristiques
-                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200 font-medium">Audit Indépendant</span>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-800 font-medium">Audit Indépendant</span>
                     </h1>
-                    <p class="text-xs text-slate-500">Outil de décision pour voyageurs & conseillers en voyages • Traçabilité certifiée</p>
+                    <p class="text-xs text-slate-400">Outil de décision pour voyageurs & conseillers en voyages • Traçabilité certifiée</p>
                 </div>
             </div>
 
             <!-- Fil d'Ariane des étapes -->
             <nav class="flex items-center space-x-2 text-xs font-semibold">
-                <button @click="step = 1" :class="step === 1 ? 'bg-brand-50 text-brand-700 border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="px-3 py-1.5 rounded-lg border transition">
+                <button @click="step = 1" :class="step === 1 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' : 'bg-slate-900/70 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'" class="px-3 py-1.5 rounded-xl border transition">
                     1. Type de voyage
                 </button>
-                <span class="text-slate-300">→</span>
-                <button @click="step = 2" :class="step === 2 ? 'bg-brand-50 text-brand-700 border-brand-500' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'" class="px-3 py-1.5 rounded-lg border transition">
+                <span class="text-slate-600">→</span>
+                <button @click="step = 2" :class="step === 2 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' : 'bg-slate-900/70 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'" class="px-3 py-1.5 rounded-xl border transition">
                     2. Offres & Contrôle (<span x-text="offers.length"></span>)
                 </button>
-                <span class="text-slate-300">→</span>
-                <button @click="if (comparisonResult) step = 3" :disabled="!comparisonResult" :class="step === 3 ? 'bg-brand-50 text-brand-700 border-brand-500' : (comparisonResult ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed')" class="px-3 py-1.5 rounded-lg border transition">
+                <span class="text-slate-600">→</span>
+                <button @click="if (comparisonResult) step = 3" :disabled="!comparisonResult" :class="step === 3 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/50 shadow-sm shadow-cyan-500/20' : (comparisonResult ? 'bg-slate-900/70 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200 cursor-pointer' : 'bg-slate-950/40 text-slate-600 border-slate-900 cursor-not-allowed')" class="px-3 py-1.5 rounded-xl border transition">
                     3. Rapport & Synthèse
                 </button>
             </nav>
 
             <!-- Bouton Mémoire d'Apprentissage -->
-            <button type="button" @click="showRulesModal = true" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs" title="Consulter la mémoire des règles apprises">
+            <button type="button" @click="showRulesModal = true" class="bg-indigo-950/70 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-indigo-950/50" title="Consulter la mémoire des règles apprises">
                 <span>🧠</span>
                 <span>Règles apprises (<span x-text="learnedRules.length"></span>)</span>
             </button>
@@ -80,14 +80,14 @@
 
     <!-- Zone de notifications / Alertes -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full no-print" x-show="errorMessage || successMessage">
-        <div x-show="errorMessage" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm mb-3 flex items-start justify-between">
+        <div x-show="errorMessage" class="bg-rose-950/80 border-l-4 border-rose-500 border border-rose-800/40 p-4 rounded-xl shadow-xl shadow-black/40 mb-3 flex items-start justify-between text-rose-200">
             <div class="flex items-center space-x-2">
                 <span class="text-red-500 font-bold text-lg">⚠️</span>
                 <p class="text-sm text-red-700 font-medium" x-text="errorMessage"></p>
             </div>
             <button @click="errorMessage = ''" class="text-red-400 hover:text-red-700 text-sm font-bold">×</button>
         </div>
-        <div x-show="successMessage" class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg shadow-sm mb-3 flex items-start justify-between">
+        <div x-show="successMessage" class="bg-emerald-950/80 border-l-4 border-emerald-500 border border-emerald-800/40 p-4 rounded-xl shadow-xl shadow-black/40 mb-3 flex items-start justify-between text-emerald-200">
             <div class="flex items-center space-x-2">
                 <span class="text-emerald-500 font-bold text-lg">✓</span>
                 <p class="text-sm text-emerald-800 font-medium" x-text="successMessage"></p>
@@ -103,11 +103,11 @@
         <!-- ÉTAPE 1 : CHOIX DU TYPE DE VOYAGE PRÉVU    -->
         <!-- ========================================== -->
         <section x-show="step === 1" class="transition-smooth">
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 mb-8">
+            <div class="bento-card p-6 sm:p-10 mb-8">
                 <div class="max-w-3xl mb-8">
-                    <span class="text-xs font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">Étape préliminaire obligatoire</span>
-                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-3">Quel type de voyage envisagez-vous ?</h2>
-                    <p class="text-slate-600 mt-2 text-sm sm:text-base leading-relaxed">
+                    <span class="text-xs font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/70 px-3 py-1 rounded-full border border-cyan-500/30 inline-block">Étape préliminaire obligatoire</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-3">Quel type de voyage envisagez-vous ?</h2>
+                    <p class="text-slate-400 mt-2 text-sm sm:text-base leading-relaxed">
                         Le comparateur adapte automatiquement sa grille d'évaluation, l'analyse de l'emplacement des hébergements et ses recommandations en fonction des priorités réelles de votre projet.
                     </p>
                 </div>
@@ -116,26 +116,26 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <template x-for="t in travelTypes" :key="t.id">
                         <div @click="selectTravelType(t.id)" 
-                             :class="travelType === t.id ? 'border-brand-600 ring-2 ring-brand-500/20 bg-brand-50/30' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'"
-                             class="rounded-xl border p-5 cursor-pointer transition flex flex-col justify-between group shadow-sm hover:shadow">
+                             :class="travelType === t.id ? 'border-cyan-500/80 bg-gradient-to-br from-cyan-950/35 via-slate-900/90 to-slate-900/90 shadow-xl shadow-cyan-950/40 ring-1 ring-cyan-500/40' : 'bento-cell hover:border-slate-700/80 hover:bg-slate-900/80'"
+                             class="rounded-2xl border p-5 cursor-pointer transition flex flex-col justify-between group shadow-lg">
                             <div>
                                 <div class="flex items-center justify-between mb-3">
-                                    <h3 class="text-lg font-bold text-slate-900 group-hover:text-brand-700 transition" x-text="t.title"></h3>
-                                    <span :class="travelType === t.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-brand-100 group-hover:text-brand-700'" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition">
+                                    <h3 class="text-lg font-bold text-white group-hover:text-cyan-300 transition" x-text="t.title"></h3>
+                                    <span :class="travelType === t.id ? 'bg-cyan-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-500 group-hover:bg-cyan-950 group-hover:text-cyan-400'" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition">
                                         ✓
                                     </span>
                                 </div>
-                                <p class="text-xs text-slate-600 mb-4 leading-relaxed" x-text="t.desc"></p>
+                                <p class="text-xs text-slate-400 mb-4 leading-relaxed" x-text="t.desc"></p>
                             </div>
-                            <div class="pt-3 border-t border-slate-100">
-                                <span class="text-[11px] font-semibold text-brand-800 bg-brand-100/60 px-2 py-0.5 rounded" x-text="t.badge"></span>
+                            <div class="pt-3 border-t border-slate-800/80">
+                                <span class="text-[11px] font-semibold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-lg" x-text="t.badge"></span>
                             </div>
                         </div>
                     </template>
                 </div>
 
                 <div class="mt-8 flex justify-end">
-                    <button @click="step = 2" class="bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm px-6 py-3 rounded-xl shadow transition flex items-center gap-2">
+                    <button @click="step = 2" class="bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-sm px-7 py-3.5 rounded-xl shadow-xl shadow-cyan-950/50 border border-cyan-400/30 transition flex items-center gap-2">
                         Poursuivre vers l'ajout des offres →
                     </button>
                 </div>
@@ -148,20 +148,20 @@
         <section x-show="step === 2" class="transition-smooth">
             
             <!-- Bandeau de configuration & type choisi -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div class="bento-card p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center space-x-3">
-                    <span class="text-xs text-slate-500 uppercase font-semibold">Type de voyage actif :</span>
-                    <span class="bg-brand-700 text-white font-bold text-xs uppercase px-3 py-1 rounded-full" x-text="travelType"></span>
-                    <button @click="step = 1" class="text-xs text-brand-700 hover:underline font-medium">Modifier le type</button>
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Type de voyage actif :</span>
+                    <span class="bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-black text-xs uppercase px-3 py-1 rounded-full shadow-sm shadow-cyan-500/30" x-text="travelType"></span>
+                    <button @click="step = 1" class="text-xs text-cyan-400 hover:underline font-medium">Modifier le type</button>
                 </div>
 
                 <!-- Raccourcis de démonstration rapide -->
                 <div class="flex items-center flex-wrap gap-2 text-xs">
                     <span class="text-slate-500 font-medium">Échantillons prêts à comparer :</span>
-                    <button @click="loadSampleOffers(travelType, true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300 font-medium transition">
+                    <button @click="loadSampleOffers(travelType, true)" class="bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-xl border border-slate-700 text-xs font-semibold transition">
                         🔄 Charger 2 offres réalistes (<span x-text="travelType"></span>)
                     </button>
-                    <button @click="loadSampleInvalidOffer()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-1 rounded border border-amber-300 font-medium transition" title="Teste la détection d'une offre ne comprenant pas d'hébergement ou moins de 2 prestations">
+                    <button @click="loadSampleInvalidOffer()" class="bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 px-3 py-1 rounded-xl border border-amber-500/40 text-xs font-semibold transition" title="Teste la détection d'une offre ne comprenant pas d'hébergement ou moins de 2 prestations">
                         ⚠️ Tester offre non conforme
                     </button>
                 </div>
@@ -171,21 +171,21 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
                 
                 <!-- 1. Déposer un fichier (PDF, Word, Excel) -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                        <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
                             <span class="text-base text-brand-700">📄</span>
                             <span>Importer un fichier</span>
                         </div>
                         <p class="text-xs text-slate-500 mb-3">Accepte les formats <strong>PDF, Word (.docx) et Excel (.xlsx)</strong>. Contenu traité comme données pures.</p>
                         
                         <label class="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer block transition relative"
-                               :class="isDragging ? 'border-brand-600 bg-brand-50/80 ring-2 ring-brand-500/30' : 'border-slate-300 hover:border-brand-500 bg-slate-50 hover:bg-brand-50/30'"
+                               :class="isDragging ? 'border-cyan-500 bg-cyan-950/40 ring-2 ring-cyan-500/40' : 'border-slate-800 hover:border-cyan-500/60 bg-slate-950/70 hover:bg-slate-900/70'"
                                @dragover.prevent="isDragging = true"
                                @dragleave.prevent="isDragging = false"
                                @drop.prevent="handleFileDrop($event)">
                             <div x-show="!uploading" class="space-y-1">
-                                <span class="text-xs font-bold text-slate-800 block">Choisir ou glisser un fichier</span>
+                                <span class="text-xs font-bold text-slate-200 block">Choisir ou glisser un fichier</span>
                                 <span class="text-[11px] text-slate-500 block">PDF, Word (.docx) ou Excel (.xlsx)</span>
                             </div>
                             <div x-show="uploading" class="py-1 flex items-center justify-center space-x-2">
@@ -205,9 +205,9 @@
                 </div>
 
                 <!-- 2. Importer une page Web via URL -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                        <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
                             <span class="text-base text-brand-700">🔗</span>
                             <span>Importer un lien Internet</span>
                         </div>
@@ -226,15 +226,15 @@
                 </div>
 
                 <!-- 3. Formulaire manuel / Offre vierge -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center space-x-2 text-slate-900 font-bold text-sm mb-1">
+                        <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
                             <span class="text-base text-brand-700">✍️</span>
                             <span>Ajout manuel structuré</span>
                         </div>
                         <p class="text-xs text-slate-500 mb-3">Créez une offre personnalisée vierge à remplir via les formulaires ci-dessous.</p>
                         
-                        <button @click="addManualOffer()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
+                        <button @click="addManualOffer()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-200 border border-slate-300 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
                             <span>+ Ajouter une offre manuelle</span>
                         </button>
                     </div>
@@ -245,14 +245,14 @@
             </div>
 
             <!-- Onglets de sélection des offres à vérifier / corriger -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <div class="bento-card overflow-hidden mb-8">
                 
-                <div class="border-b border-slate-200 bg-slate-50/70 px-4 sm:px-6 pt-4 flex flex-wrap items-center justify-between gap-3">
+                <div class="border-b border-slate-800 bg-slate-950/70 px-4 sm:px-6 pt-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center space-x-2 overflow-x-auto pb-2">
                         <template x-for="(offer, idx) in offers" :key="offer.id">
                             <div class="flex items-center">
                                 <button @click="activeTabOfferIndex = idx" 
-                                        :class="activeTabOfferIndex === idx ? 'bg-white text-brand-800 border-slate-200 border-b-white font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900 border-transparent font-medium'"
+                                        :class="activeTabOfferIndex === idx ? 'bg-slate-900 text-cyan-300 border-slate-700 border-b-slate-900 font-bold shadow-md' : 'text-slate-400 hover:text-slate-200 border-transparent font-medium'"
                                         class="px-4 py-2 text-xs sm:text-sm rounded-t-lg border border-b-0 transition flex items-center space-x-2">
                                     <span class="w-2 h-2 rounded-full" :class="offer.conforme_criteres ? 'bg-emerald-500' : 'bg-red-500'"></span>
                                     <span x-text="`Offre ${idx+1} : ${offer.titre.substring(0, 25)}...`"></span>
@@ -263,7 +263,7 @@
                     </div>
 
                     <div class="pb-2">
-                        <button @click="triggerComparison()" :disabled="offers.length < 2" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-40 text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-xl shadow transition flex items-center gap-2">
+                        <button @click="triggerComparison()" :disabled="offers.length < 2" class="bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 disabled:opacity-30 text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xl shadow-cyan-950/60 border border-cyan-400/30 transition flex items-center gap-2">
                             <span>Comparer les <span x-text="offers.length"></span> offres côte à côte →</span>
                         </button>
                     </div>
@@ -275,7 +275,7 @@
                         <div x-data="{ currentOffer: offers[activeTabOfferIndex] }">
                             
                             <!-- 1. Alerte de conformité (Règle métier obligatoire) -->
-                            <div x-show="!currentOffer.conforme_criteres" class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                            <div x-show="!currentOffer.conforme_criteres" class="mb-6 p-4 bg-rose-950/70 border-l-4 border-rose-500 border border-rose-800/40 rounded-xl text-rose-200">
                                 <div class="flex items-start space-x-3">
                                     <span class="text-red-600 font-bold text-xl">⚠️</span>
                                     <div>
@@ -292,7 +292,7 @@
                                 </div>
                             </div>
 
-                            <div x-show="currentOffer.conforme_criteres" class="mb-6 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg flex items-center justify-between text-xs text-emerald-800">
+                            <div x-show="currentOffer.conforme_criteres" class="mb-6 p-3 bg-emerald-950/70 border-l-4 border-emerald-500 border border-emerald-800/40 rounded-xl flex items-center justify-between text-xs text-emerald-200">
                                 <div>
                                     <strong>✓ Offre conforme aux critères d'éligibilité :</strong> <span x-text="currentOffer.nombre_prestations_incluses"></span> prestations identifiées avec hébergement garanti.
                                 </div>
@@ -300,14 +300,14 @@
                             </div>
 
                             <!-- Informations Générales & Traçabilité -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-slate-50/80 rounded-xl border border-slate-200">
+                            <div class="bento-cell p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-slate-800">
                                 <div class="md:col-span-2">
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titre de l'offre</label>
-                                    <input type="text" x-model="currentOffer.titre" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-brand-500">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Titre de l'offre</label>
+                                    <input type="text" x-model="currentOffer.titre" class="w-full text-xs font-bold bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:ring-1 focus:ring-cyan-500">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Source / Traçabilité</label>
-                                    <div class="text-xs bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-between">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Source / Traçabilité</label>
+                                    <div class="text-xs bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
                                         <span class="text-slate-600 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
                                         <span class="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
                                     </div>
@@ -315,21 +315,21 @@
                             </div>
 
                             <!-- Bannière d'apprentissage actif -->
-                            <div class="bg-gradient-to-r from-amber-50 to-indigo-50 border border-amber-200/80 rounded-xl p-3.5 mb-5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                            <div class="bento-cell p-4 mb-5 bg-gradient-to-r from-indigo-950/80 via-purple-950/40 to-slate-950/90 border border-indigo-500/35 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
                                 <div class="flex items-center space-x-3">
                                     <span class="text-2xl">🧠</span>
                                     <div>
-                                        <div class="font-bold text-slate-900 flex items-center gap-2">
+                                        <div class="font-bold text-white flex items-center gap-2">
                                             <span>Assistant d'Apprentissage & Informations Manquantes</span>
                                             <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold" x-text="learnedRules.length + ' règles actives'"></span>
                                         </div>
-                                        <p class="text-slate-600 text-[11px] mt-0.5">
+                                        <p class="text-slate-300 text-[11px] mt-0.5">
                                             Une information est manquante, inexacte ou mal ventilée ? Cliquez sur <strong>« 🎯 Indique-moi l'information »</strong> pour la pointer dans le document. Le comparateur apprendra à la reconnaître automatiquement pour tous vos prochains voyages.
                                         </p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="bg-white hover:bg-slate-50 text-indigo-700 font-bold border border-indigo-200 px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1.5 text-xs">
+                                    <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 font-bold border border-indigo-500/40 px-3 py-1.5 rounded-xl shadow-sm transition flex items-center gap-1.5 text-xs">
                                         <span>🎯</span> Pointer dans le document
                                     </button>
                                     <button type="button" @click="showRulesModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1 text-xs">
@@ -356,13 +356,13 @@
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 
                                 <!-- Bloc 1 : Dates & Prix Normalisé -->
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <div class="bento-cell p-5 border-slate-800 space-y-3">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                                             <span>💶</span> Dates, Durée & Conditions Financières
                                         </h4>
                                         <div class="flex items-center space-x-1.5">
-                                            <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="text-[11px] text-amber-800 hover:text-amber-950 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer une information financière manquante dans le document">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="text-[10px] text-amber-300 hover:text-amber-200 font-bold bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs" title="Indiquer une information financière manquante dans le document">
                                                 <span>🎯</span> Indique-moi l'information
                                             </button>
                                             <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur + Calculs</span>
@@ -406,7 +406,7 @@
                                         <div>
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="font-medium text-slate-700">Prix H.T total (€)</label>
-                                                <button type="button" @click="openTeachModal(currentOffer, 'prix_ht', 'Prix H.T total (€)')" class="text-[10px] text-slate-500 hover:text-slate-800 underline" title="Pointer dans le document">🎯</button>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'prix_ht', 'Prix H.T total (€)')" class="text-[10px] text-slate-500 hover:text-slate-200 underline" title="Pointer dans le document">🎯</button>
                                             </div>
                                             <input type="number" x-model="currentOffer.prix.prix_ht" @input="recalculatePrices(currentOffer, 'ht')" class="w-full font-bold text-slate-900 border border-slate-300 rounded p-1.5" title="Prix du forfait hors taxes d'aéroport">
                                             <span class="text-[10px] text-slate-500" x-text="(currentOffer.prix.prix_ht_par_personne || 0) + ' € / pers'"></span>
@@ -450,7 +450,7 @@
                                     </div>
 
                                     <!-- Synthèse normalisée -->
-                                    <div class="bg-brand-50/50 border border-brand-100 rounded-lg p-3 text-center text-xs">
+                                    <div class="bento-cell p-3 border-slate-800/80 bg-slate-950/80 text-center text-xs">
                                         <template x-if="currentOffer.transport.est_vol">
                                             <div class="grid grid-cols-4 gap-2">
                                                 <div>
@@ -495,13 +495,13 @@
                                 </div>
 
                                 <!-- Bloc 2 : Transport & Trajet en avion -->
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <div class="bento-cell p-5 border-slate-800 space-y-3">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                                             <span>🛫</span> Transport & Vol
                                         </h4>
                                         <div class="flex items-center space-x-1.5">
-                                            <button type="button" @click="openTeachModal(currentOffer, 'compagnie_aerienne', 'Compagnie aérienne')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer la compagnie aérienne ou le vol dans le document">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'compagnie_aerienne', 'Compagnie aérienne')" class="text-[10px] text-indigo-300 hover:text-indigo-200 font-bold bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs" title="Indiquer la compagnie aérienne ou le vol dans le document">
                                                 <span>🎯</span> Indique-moi l'information
                                             </button>
                                             <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
@@ -550,13 +550,13 @@
                                 </div>
 
                                 <!-- Bloc 3 : Hébergement (Critère Obligatoire) -->
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm" :class="!currentOffer.contient_hebergement ? 'ring-2 ring-red-400' : ''">
-                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <div class="bento-cell p-5 border-slate-800 space-y-3" :class="!currentOffer.contient_hebergement ? 'ring-2 ring-rose-500/60' : ''">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                                             <span>🏨</span> Hébergement (Obligatoire)
                                         </h4>
                                         <div class="flex items-center space-x-1.5">
-                                            <button type="button" @click="openTeachModal(currentOffer, 'nom_hotel', 'Hôtels / Hébergements')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les hôtels ou le standing dans le document">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'nom_hotel', 'Hôtels / Hébergements')" class="text-[10px] text-indigo-300 hover:text-indigo-200 font-bold bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs" title="Indiquer les hôtels ou le standing dans le document">
                                                 <span>🎯</span> Indique-moi l'information
                                             </button>
                                             <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Données Vendeur & Audit</span>
@@ -595,7 +595,7 @@
                                         <input type="text" x-model="currentOffer.hebergement.adresse" class="w-full border border-slate-300 rounded p-1.5">
                                     </div>
 
-                                    <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-xs">
+                                    <div class="p-2.5 bg-slate-50 rounded border border-slate-800 text-xs">
                                         <div class="flex items-center justify-between text-[11px] mb-1">
                                             <span class="font-semibold text-slate-700">Avis vérifiés de l'hébergement :</span>
                                             <span class="text-[10px] text-slate-500 italic" x-text="currentOffer.hebergement.avis_source"></span>
@@ -612,13 +612,13 @@
                                 </div>
 
                                 <!-- Bloc 4 : Restauration, Visites, Guide, Assurance -->
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <div class="bento-cell p-5 border-slate-800 space-y-3">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                                             <span>🍽️</span> Restauration & Prestations Associées
                                         </h4>
                                         <div class="flex items-center space-x-1.5">
-                                            <button type="button" @click="openTeachModal(currentOffer, 'guide', 'Guide & Accompagnement')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les prestations ou le guide dans le document">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'guide', 'Guide & Accompagnement')" class="text-[10px] text-indigo-300 hover:text-indigo-200 font-bold bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs" title="Indiquer les prestations ou le guide dans le document">
                                                 <span>🎯</span> Indique-moi l'information
                                             </button>
                                             <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
@@ -701,13 +701,13 @@
                                 </div>
 
                                 <!-- Bloc 5 : Annulation & Fiabilité de l'Organisateur -->
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm lg:col-span-2">
-                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <div class="bento-cell p-5 border-slate-800 lg:col-span-2 space-y-3">
+                                    <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
                                             <span>🛡️</span> Conditions d'Annulation & Identité du Vendeur
                                         </h4>
                                         <div class="flex items-center space-x-1.5">
-                                            <button type="button" @click="openTeachModal(currentOffer, 'annulation', 'Conditions & Barème d\'annulation')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les conditions d'annulation dans le document">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'annulation', 'Conditions & Barème d\'annulation')" class="text-[10px] text-indigo-300 hover:text-indigo-200 font-bold bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs" title="Indiquer les conditions d'annulation dans le document">
                                                 <span>🎯</span> Indique-moi l'information
                                             </button>
                                             <span class="text-[10px] badge-source-externe px-2 py-0.5 rounded font-semibold">Exigence de Neutralité</span>
@@ -729,7 +729,7 @@
                                             <input type="text" x-model="currentOffer.annulation.conditions_detaillees" placeholder="Détail des conditions..." class="w-full border border-slate-300 rounded p-1.5 text-slate-700">
                                         </div>
 
-                                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-800">
                                             <div class="flex items-center justify-between mb-1">
                                                 <label class="font-medium text-slate-700">Organisateur / Vendeur identifié</label>
                                                 <button type="button" @click="openTeachModal(currentOffer, 'vendeur', 'Organisateur / Vendeur')" class="text-[10px] text-indigo-600 underline">🎯 Pointer</button>
@@ -745,11 +745,11 @@
                 </div>
 
                 <!-- Footer de l'Étape 2 avec bouton d'action -->
-                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                <div class="bg-slate-950/80 px-6 py-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
                     <button @click="step = 1" class="text-xs font-semibold text-slate-600 hover:text-slate-900">
                         ← Retour au choix du type
                     </button>
-                    <button @click="triggerComparison()" :disabled="offers.length < 2 || loading" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white font-bold text-sm px-7 py-3 rounded-xl shadow transition flex items-center gap-2">
+                    <button @click="triggerComparison()" :disabled="offers.length < 2 || loading" class="bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 disabled:opacity-30 text-white font-black text-sm px-8 py-3.5 rounded-xl shadow-xl shadow-cyan-950/60 border border-cyan-400/30 transition flex items-center gap-2">
                         <span x-show="!loading">Lancer l'analyse comparative détaillée →</span>
                         <span x-show="loading">Calcul de la comparaison en cours...</span>
                     </button>
@@ -764,12 +764,12 @@
             
             <!-- Barre d'actions du rapport -->
             <div class="mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
-                <button @click="step = 2" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition">
+                <button @click="step = 2" class="bento-cell px-4 py-2 text-slate-300 hover:text-white border-slate-700 text-xs font-bold transition shadow-sm">
                     ← Modifier ou corriger les offres
                 </button>
                 <div class="flex items-center space-x-3">
                     <span class="text-xs text-slate-500 font-medium">Voyage : <strong class="uppercase text-slate-900" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
-                    <button @click="printReport()" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                    <button @click="printReport()" class="bento-cell px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                         <span>🖨️ Imprimer / Export PDF</span>
                     </button>
                 </div>
@@ -786,8 +786,8 @@
             </div>
 
             <!-- 1. Synthèse Argumentée & Recommandation Motivée -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-8 card-print">
-                <div class="flex flex-wrap items-center justify-between pb-4 mb-5 border-b border-slate-100 gap-3">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-800 p-6 sm:p-8 mb-8 card-print">
+                <div class="flex flex-wrap items-center justify-between pb-4 mb-5 border-b border-slate-800/80 gap-3">
                     <div>
                         <span class="text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
                             Synthèse Stratégique Indépendante
@@ -803,24 +803,24 @@
                 </div>
 
                 <!-- Texte de synthèse -->
-                <div class="prose prose-slate max-w-none text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 mb-6 bg-slate-50/70 p-4 rounded-xl border border-slate-200"
+                <div class="prose prose-slate max-w-none text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 mb-6 bg-slate-50/70 p-4 rounded-xl border border-slate-800"
                      x-html="comparisonResult ? comparisonResult.synthese_argumentee.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n\n/g, '<br><br>') : ''">
                 </div>
 
                 <!-- Justification de la recommandation -->
-                <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-2">Motifs de la sélection :</h3>
-                    <div class="text-xs sm:text-sm text-emerald-900 space-y-1"
+                <div class="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 text-emerald-200">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2">Motifs de la sélection :</h3>
+                    <div class="text-xs sm:text-sm text-emerald-200 space-y-1"
                          x-html="comparisonResult ? comparisonResult.justification_recommandation.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') : ''">
                     </div>
                 </div>
             </div>
 
             <!-- 2. Transparence du Score : Pondérations Personnalisables & Mesure de l'Incertitude -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 card-print">
-                <div class="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-slate-100 gap-3">
+            <div class="bento-card p-6 mb-8 card-print">
+                <div class="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-slate-800/80 gap-3">
                     <div>
-                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
                             <span>⚖️</span> Grille de Scoring Transparent & Pondérations Ajustables
                         </h3>
                         <p class="text-xs text-slate-500 mt-0.5">
@@ -831,54 +831,54 @@
                 </div>
 
                 <!-- Sliders de pondération -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 no-print">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6 bento-cell p-4 border-slate-800 bg-slate-950/60 no-print">
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">
                             Prix / Budget : <span x-text="weights.poids_prix"></span>%
                         </label>
-                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prix" @input="updateWeights()" class="w-full accent-brand-600">
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prix" @input="updateWeights()" class="w-full accent-cyan-400">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">
                             Hébergement : <span x-text="weights.poids_hebergement"></span>%
                         </label>
-                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_hebergement" @input="updateWeights()" class="w-full accent-brand-600">
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_hebergement" @input="updateWeights()" class="w-full accent-cyan-400">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">
                             Annulation : <span x-text="weights.poids_annulation"></span>%
                         </label>
-                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_annulation" @input="updateWeights()" class="w-full accent-brand-600">
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_annulation" @input="updateWeights()" class="w-full accent-cyan-400">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">
                             Prestations : <span x-text="weights.poids_prestations"></span>%
                         </label>
-                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prestations" @input="updateWeights()" class="w-full accent-brand-600">
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_prestations" @input="updateWeights()" class="w-full accent-cyan-400">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">
+                        <label class="block text-[11px] font-bold text-slate-300 mb-1">
                             Fiabilité / Avis : <span x-text="weights.poids_fiabilite"></span>%
                         </label>
-                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_fiabilite" @input="updateWeights()" class="w-full accent-brand-600">
+                        <input type="range" min="0" max="60" step="5" x-model.number="weights.poids_fiabilite" @input="updateWeights()" class="w-full accent-cyan-400">
                     </div>
                 </div>
 
                 <!-- Tableau des scores avec taux de complétude et incertitudes -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <template x-for="offer in (comparisonResult ? comparisonResult.offres : [])" :key="offer.id">
-                        <div class="bg-white border rounded-xl p-4 shadow-sm flex flex-col justify-between"
-                             :class="comparisonResult.scores[offer.id].score_global >= 75 ? 'border-brand-300 ring-1 ring-brand-300' : 'border-slate-200'">
+                        <div class="bento-cell p-4 flex flex-col justify-between border-slate-800 hover:border-cyan-500/40 transition"
+                             :class="comparisonResult.scores[offer.id].score_global >= 75 ? 'border-cyan-500/60 ring-1 ring-cyan-500/30' : 'border-slate-800'">
                             <div>
                                 <div class="flex items-center justify-between mb-2">
                                     <h4 class="text-xs font-bold text-slate-900 truncate" x-text="offer.titre"></h4>
-                                    <div class="bg-brand-700 text-white font-extrabold text-sm px-2.5 py-0.5 rounded-lg shadow-sm">
+                                    <div class="bg-gradient-to-tr from-cyan-600 to-teal-500 text-white font-black text-sm px-3 py-1 rounded-xl shadow-md shadow-cyan-950/50">
                                         <span x-text="comparisonResult.scores[offer.id].score_global"></span><span class="text-[10px] font-normal">/100</span>
                                     </div>
                                 </div>
 
                                 <!-- Décomposition des sous-scores -->
-                                <div class="space-y-1.5 text-[11px] text-slate-600 mb-4">
+                                <div class="space-y-1.5 text-[11px] text-slate-400 mb-4">
                                     <div class="flex justify-between">
                                         <span>Indice Prix :</span>
                                         <strong x-text="comparisonResult.scores[offer.id].score_prix + '/100'"></strong>
@@ -903,12 +903,12 @@
                             </div>
 
                             <!-- Indice de complétude et données manquantes (Transparence de l'incertitude) -->
-                            <div class="pt-3 border-t border-slate-100">
+                            <div class="pt-3 border-t border-slate-800/80">
                                 <div class="flex items-center justify-between text-[11px] mb-1">
                                     <span class="font-semibold text-slate-700">Complétude factuelle :</span>
                                     <span class="font-bold text-xs" :class="comparisonResult.scores[offer.id].completude_donnees_pct >= 80 ? 'text-emerald-700' : 'text-amber-700'" x-text="comparisonResult.scores[offer.id].completude_donnees_pct + '%'"></span>
                                 </div>
-                                <div class="w-full bg-slate-200 rounded-full h-1.5 mb-2">
+                                <div class="w-full bg-slate-800 rounded-full h-1.5 mb-2">
                                     <div class="h-1.5 rounded-full" :class="comparisonResult.scores[offer.id].completude_donnees_pct >= 80 ? 'bg-emerald-500' : 'bg-amber-500'" :style="`width: ${comparisonResult.scores[offer.id].completude_donnees_pct}%`"></div>
                                 </div>
                                 
@@ -927,9 +927,9 @@
             </div>
 
             <!-- 3. Matrice des Écarts de Périmètre Contractuel -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 card-print" x-show="comparisonResult && comparisonResult.ecarts_perimetre.length > 0">
-                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <div class="bento-card p-6 mb-8 card-print" x-show="comparisonResult && comparisonResult.ecarts_perimetre.length > 0">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
                         <span>🔍</span> Différences de Périmètre Entre les Offres
                     </h3>
                     <span class="text-xs text-slate-500">Mise en évidence des inclusions et suppléments</span>
@@ -938,7 +938,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200">
+                            <tr class="bg-slate-900 text-slate-300 uppercase font-bold border-b border-slate-800">
                                 <th class="p-3">Prestation</th>
                                 <th class="p-3">Offre A</th>
                                 <th class="p-3">Offre B</th>
@@ -947,8 +947,8 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <template x-for="diff in (comparisonResult ? comparisonResult.ecarts_perimetre : [])" :key="diff.prestation">
-                                <tr class="hover:bg-slate-50/50">
-                                    <td class="p-3 font-bold text-slate-900 whitespace-nowrap" x-text="diff.prestation"></td>
+                                <tr class="hover:bg-slate-850/50">
+                                    <td class="p-3 font-bold text-white whitespace-nowrap" x-text="diff.prestation"></td>
                                     <td class="p-3 text-slate-700" x-text="diff.status_offre_a"></td>
                                     <td class="p-3 text-slate-700" x-text="diff.status_offre_b"></td>
                                     <td class="p-3 text-slate-500 italic" x-text="diff.impact"></td>
@@ -960,8 +960,8 @@
             </div>
 
             <!-- 4. Carte Comparative des Circuits & Itinéraires Géographiques -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 overflow-hidden card-print" x-show="itineraryData">
-                <div class="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-slate-100 gap-3">
+            <div class="bento-card p-6 mb-8 overflow-hidden card-print" x-show="itineraryData">
+                <div class="flex flex-wrap items-center justify-between pb-3 mb-4 border-b border-slate-800/80 gap-3">
                     <div>
                         <div class="flex items-center space-x-2">
                             <span class="text-lg">🗺️</span>
@@ -973,23 +973,23 @@
                     <!-- Sélecteur de filtres circuits -->
                     <div class="flex items-center flex-wrap gap-2 text-xs">
                         <button @click="setMapCircuitFilter('all')" 
-                                :class="mapFilter === 'all' ? 'bg-slate-900 text-white font-bold shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'" 
-                                class="px-3 py-1.5 rounded-lg border border-slate-300 transition flex items-center gap-1.5">
+                                :class="mapFilter === 'all' ? 'bg-slate-800 text-cyan-300 font-bold border-cyan-500/50 shadow-sm' : 'bento-cell text-slate-400 hover:text-slate-200'" 
+                                class="px-3 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                             <span>🧭</span> Les 2 circuits superposés
                         </button>
                         <button @click="setMapCircuitFilter('offer0')" 
-                                :class="mapFilter === 'offer0' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border-indigo-200'" 
-                                class="px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5">
+                                :class="mapFilter === 'offer0' ? 'bg-indigo-900 text-indigo-200 font-bold border-indigo-500/70 shadow-sm' : 'bento-cell text-slate-400 hover:text-slate-200'" 
+                                class="px-3 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
                             <span x-text="offers[0] ? offers[0].titre.substring(0, 20) + '...' : 'Circuit 1'"></span>
                         </button>
                         <button @click="setMapCircuitFilter('offer1')" 
-                                :class="mapFilter === 'offer1' ? 'bg-emerald-600 text-white font-bold shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-200'" 
-                                class="px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5">
+                                :class="mapFilter === 'offer1' ? 'bg-emerald-950 text-emerald-300 font-bold border-emerald-500/70 shadow-sm' : 'bento-cell text-slate-400 hover:text-slate-200'" 
+                                class="px-3 py-1.5 rounded-xl border border-slate-700 transition flex items-center gap-1.5">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                             <span x-text="offers[1] ? offers[1].titre.substring(0, 20) + '...' : 'Circuit 2'"></span>
                         </button>
-                        <button @click="resetMapView()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-lg border border-slate-300 transition" title="Recentrer la carte sur l'ensemble du parcours">
+                        <button @click="resetMapView()" class="bento-cell hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700 transition" title="Recentrer la carte sur l'ensemble du parcours">
                             🎯 Recentrer
                         </button>
                     </div>
@@ -998,12 +998,12 @@
                 <!-- Grille Carte + Liste des étapes -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                     <!-- Carte Leaflet (8 colonnes) -->
-                    <div class="lg:col-span-8 rounded-xl overflow-hidden border border-slate-200 shadow-inner relative" style="height: 520px; z-index: 1;">
+                    <div class="lg:col-span-8 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative" style="height: 520px; z-index: 1;">
                         <div id="itineraryMap" class="w-full h-full"></div>
                         
                         <!-- Légende cartographique intégrée -->
-                        <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-md border border-slate-200 text-[11px] space-y-1.5 pointer-events-none" style="z-index: 1000;">
-                            <div class="font-extrabold text-slate-900 border-b border-slate-100 pb-1">Légende des parcours :</div>
+                        <div class="absolute bottom-3 right-3 bg-slate-950/95 backdrop-blur-md p-3.5 rounded-xl shadow-2xl border border-slate-800 text-[11px] space-y-1.5 pointer-events-none text-slate-200" style="z-index: 1000;">
+                            <div class="font-extrabold text-slate-900 border-b border-slate-800/80 pb-1">Légende des parcours :</div>
                             <div class="flex items-center gap-2">
                                 <span class="w-3.5 h-1.5 bg-indigo-600 rounded"></span>
                                 <span class="font-semibold text-indigo-900" x-text="offers[0] ? offers[0].titre.substring(0, 22) : 'Circuit 1'"></span>
@@ -1023,15 +1023,15 @@
 
                     <!-- Panneau interactif des étapes jour par jour (4 colonnes) -->
                     <div class="lg:col-span-4 flex flex-col h-[520px]">
-                        <div class="text-xs font-bold text-slate-800 pb-2 mb-2 border-b border-slate-100 flex items-center justify-between">
+                        <div class="text-xs font-bold text-slate-200 pb-2 mb-2 border-b border-slate-800/80 flex items-center justify-between">
                             <span>Étapes & Points d'Intérêt (<span x-text="itineraryData ? itineraryData.steps.length : 0"></span>)</span>
                             <span class="text-[10px] text-slate-400 font-normal">Cliquez pour zoomer</span>
                         </div>
                         <div class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs" style="scrollbar-width: thin;">
                             <template x-for="(step, sIdx) in (itineraryData ? itineraryData.steps : [])" :key="step.id">
                                 <div @click="focusStep(step)" 
-                                     :class="selectedStepId === step.id ? 'border-brand-500 bg-brand-50/60 ring-1 ring-brand-400' : 'border-slate-200 hover:border-slate-300 bg-slate-50/60 hover:bg-slate-50'"
-                                     class="p-2.5 rounded-lg border transition cursor-pointer text-[11px] space-y-1.5">
+                                     :class="selectedStepId === step.id ? 'border-cyan-500/80 bg-cyan-950/40 ring-1 ring-cyan-500/40' : 'bento-cell hover:border-slate-700 hover:bg-slate-900/80'"
+                                     class="p-2.5 rounded-xl border transition cursor-pointer text-[11px] space-y-1.5">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center space-x-1.5 font-bold text-slate-900">
                                             <span class="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px]" x-text="sIdx + 1"></span>
@@ -1063,9 +1063,9 @@
             </div>
 
             <!-- 5. Tableau Comparatif Côte à Côte Exhaustif -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 overflow-hidden card-print">
-                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <div class="bento-card p-6 mb-8 overflow-hidden card-print">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
                         <span>📊</span> Tableau Comparatif Côte à Côte Rigoureux
                     </h3>
                     <div class="flex gap-2 text-[10px]">
@@ -1077,32 +1077,32 @@
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left border-collapse border border-slate-200">
+                    <table class="w-full text-xs text-left border-collapse border border-slate-800">
                         <thead>
-                            <tr class="bg-slate-100 border-b border-slate-200">
-                                <th class="p-3.5 font-bold text-slate-700 w-1/4">Critère Analysé</th>
+                            <tr class="bg-slate-900 border-b border-slate-800 text-slate-200">
+                                <th class="p-3.5 font-bold text-slate-300 w-1/4">Critère Analysé</th>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <th class="p-3.5 font-black text-slate-900 border-l border-slate-200 w-1/3">
+                                    <th class="p-3.5 font-black text-white border-l border-slate-800 w-1/3">
                                         <div x-text="off.titre"></div>
                                         <div class="text-[10px] font-normal text-slate-500 mt-0.5" x-text="off.source_reference"></div>
                                     </th>
                                 </template>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-200">
+                        <tbody class="divide-y divide-slate-800">
                             
                             <!-- Prix normalisé -->
-                            <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">
+                            <tr class="bg-slate-900/40">
+                                <td class="p-3 font-bold text-white">
                                     <div>Prix & Normalisation</div>
                                     <div class="text-[10px] text-slate-500 font-normal">Ventilation HT, taxes aéroport & total</div>
                                 </td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <template x-if="off.transport.est_vol">
                                             <div class="space-y-1.5">
-                                                <div class="text-sm font-extrabold text-brand-900" x-text="off.prix.prix_total_normalise + ' € total TTC'"></div>
-                                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                                <div class="text-sm font-black text-cyan-400" x-text="off.prix.prix_total_normalise + ' € total TTC'"></div>
+                                                <div class="bento-cell p-2.5 border-slate-800 text-xs space-y-1 shadow-2xs bg-slate-950/70">
                                                     <div class="flex justify-between items-center text-slate-700">
                                                         <span>🔹 Forfait H.T :</span>
                                                         <strong class="text-slate-900" x-text="off.prix.prix_ht_par_personne + ' € / pers'"></strong>
@@ -1141,14 +1141,14 @@
 
                             <!-- Transport & Vol -->
                             <tr>
-                                <td class="p-3 font-bold text-slate-900">
+                                <td class="p-3 font-bold text-white">
                                     <div>Transport & Vol</div>
                                     <div class="text-[10px] text-slate-500 font-normal">Direct vs escale, compagnie</div>
                                 </td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1.5" :class="getStatusBadgeClass(off.transport.statut)" x-text="getStatusLabel(off.transport.statut)"></span>
-                                        <div class="font-semibold text-slate-800" x-text="off.transport.type_transport"></div>
+                                        <div class="font-semibold text-slate-200" x-text="off.transport.type_transport"></div>
                                         <template x-if="off.transport.est_vol">
                                             <div class="mt-1 space-y-0.5 text-[11px]">
                                                 <div :class="off.transport.vol_direct ? 'text-emerald-700 font-bold' : (off.transport.vol_direct === false ? 'text-amber-700 font-bold' : 'text-slate-500')">
@@ -1167,21 +1167,21 @@
                             </tr>
 
                             <!-- Hébergement & Localisation -->
-                            <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">
+                            <tr class="bg-slate-900/40">
+                                <td class="p-3 font-bold text-white">
                                     <div>Hébergement</div>
                                     <div class="text-[10px] text-slate-500 font-normal">Localisation & avis vérifiés</div>
                                 </td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1.5" :class="getStatusBadgeClass(off.hebergement.statut)" x-text="getStatusLabel(off.hebergement.statut)"></span>
-                                        <div class="font-bold text-slate-900" x-text="off.hebergement.nom"></div>
+                                        <div class="font-bold text-white" x-text="off.hebergement.nom"></div>
                                         <div class="text-[11px] text-slate-600 font-semibold" x-text="off.hebergement.standing + ' • ' + off.hebergement.adresse"></div>
                                         
                                         <!-- Emplacement -->
-                                        <div class="mt-2 p-2 bg-white rounded border border-slate-200 text-[11px]">
-                                            <span class="font-bold text-slate-700 block">Pertinence emplacement :</span>
-                                            <span class="text-slate-600" x-text="off.hebergement.pertinence_emplacement"></span>
+                                        <div class="mt-2 p-2.5 bento-cell border-slate-800 text-[11px] bg-slate-950/80">
+                                            <span class="font-bold text-slate-300 block">Pertinence emplacement :</span>
+                                            <span class="text-slate-400" x-text="off.hebergement.pertinence_emplacement"></span>
                                         </div>
 
                                         <!-- Avis -->
@@ -1201,23 +1201,23 @@
 
                             <!-- Restauration -->
                             <tr>
-                                <td class="p-3 font-bold text-slate-900">Restauration</td>
+                                <td class="p-3 font-bold text-white">Restauration</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.restauration.statut)" x-text="getStatusLabel(off.restauration.statut)"></span>
-                                        <div class="font-bold text-slate-900" x-text="off.restauration.formule"></div>
+                                        <div class="font-bold text-white" x-text="off.restauration.formule"></div>
                                         <div class="text-[11px] text-slate-600 mt-0.5" x-text="off.restauration.description"></div>
                                     </td>
                                 </template>
                             </tr>
 
                             <!-- Visites & Activités -->
-                            <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">Visites & Activités</td>
+                            <tr class="bg-slate-900/40">
+                                <td class="p-3 font-bold text-white">Visites & Activités</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.activites.statut)" x-text="getStatusLabel(off.activites.statut)"></span>
-                                        <div class="font-semibold text-slate-800" x-text="off.activites.description"></div>
+                                        <div class="font-semibold text-slate-200" x-text="off.activites.description"></div>
                                         <div class="text-[10px] mt-1" :class="off.activites.billets_inclus ? 'text-emerald-700 font-bold' : 'text-slate-500'">
                                             🎟️ <span x-text="off.activites.billets_inclus ? 'Billets coupe-files inclus' : 'Billets non compris'"></span>
                                         </div>
@@ -1227,33 +1227,33 @@
 
                             <!-- Guide / Accompagnateur -->
                             <tr>
-                                <td class="p-3 font-bold text-slate-900">Guide ou Accompagnateur</td>
+                                <td class="p-3 font-bold text-white">Guide ou Accompagnateur</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.guide.statut)" x-text="getStatusLabel(off.guide.statut)"></span>
-                                        <div class="font-semibold text-slate-800" x-text="off.guide.qualification"></div>
+                                        <div class="font-semibold text-slate-200" x-text="off.guide.qualification"></div>
                                         <div class="text-[10px] text-slate-500 mt-0.5" x-text="off.guide.description"></div>
                                     </td>
                                 </template>
                             </tr>
 
                             <!-- Assurance -->
-                            <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">Assurance & Assistance</td>
+                            <tr class="bg-slate-900/40">
+                                <td class="p-3 font-bold text-white">Assurance & Assistance</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
+                                    <td class="p-3 border-l border-slate-800">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold mb-1" :class="getStatusBadgeClass(off.assurance.statut)" x-text="getStatusLabel(off.assurance.statut)"></span>
-                                        <div class="text-slate-800 font-medium" x-text="off.assurance.type_couverture"></div>
+                                        <div class="text-slate-200 font-medium" x-text="off.assurance.type_couverture"></div>
                                     </td>
                                 </template>
                             </tr>
 
                             <!-- Annulation -->
                             <tr>
-                                <td class="p-3 font-bold text-slate-900">Conditions d'Annulation</td>
+                                <td class="p-3 font-bold text-white">Conditions d'Annulation</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
-                                        <div class="font-bold text-slate-900" x-text="off.annulation.flexibilite"></div>
+                                    <td class="p-3 border-l border-slate-800">
+                                        <div class="font-bold text-white" x-text="off.annulation.flexibilite"></div>
                                         <div class="text-[11px] text-slate-600 mt-0.5" x-text="off.annulation.conditions_detaillees"></div>
                                         <div class="text-[10px] text-emerald-700 font-semibold mt-1" x-show="off.annulation.date_limite_annulation_gratuite" x-text="'Limite sans frais : ' + off.annulation.date_limite_annulation_gratuite"></div>
                                     </td>
@@ -1261,11 +1261,11 @@
                             </tr>
 
                             <!-- Vendeur & Fiabilité -->
-                            <tr class="bg-slate-50/50">
-                                <td class="p-3 font-bold text-slate-900">Vendeur & Garanties</td>
+                            <tr class="bg-slate-900/40">
+                                <td class="p-3 font-bold text-white">Vendeur & Garanties</td>
                                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                                    <td class="p-3 border-l border-slate-200">
-                                        <div class="font-bold text-slate-900" x-text="off.vendeur.nom"></div>
+                                    <td class="p-3 border-l border-slate-800">
+                                        <div class="font-bold text-white" x-text="off.vendeur.nom"></div>
                                         <div class="text-[10px] text-slate-600 font-medium mt-0.5" x-text="off.vendeur.statut_juridique"></div>
                                         <div class="text-[10px] text-slate-500 mt-1 italic leading-tight" x-text="off.vendeur.fiabilite_explication"></div>
                                     </td>
@@ -1280,19 +1280,19 @@
             <!-- 5. Points Forts, Limites & Questions au Vendeur -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 card-print">
                 <template x-for="off in (comparisonResult ? comparisonResult.offres : [])" :key="off.id">
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div class="bento-card p-6 flex flex-col justify-between">
                         <div>
-                            <h3 class="text-sm font-extrabold text-slate-900 pb-2 mb-3 border-b border-slate-100 flex items-center justify-between">
+                            <h3 class="text-sm font-extrabold text-slate-900 pb-2 mb-3 border-b border-slate-800/80 flex items-center justify-between">
                                 <span x-text="off.titre"></span>
-                                <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold" x-text="comparisonResult.scores[off.id].score_global + '/100'"></span>
+                                <span class="text-xs bg-slate-800 text-cyan-300 border border-slate-700 px-2.5 py-0.5 rounded-lg font-bold" x-text="comparisonResult.scores[off.id].score_global + '/100'"></span>
                             </h3>
 
                             <!-- Points forts -->
                             <div class="mb-4">
-                                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
                                     <span>✓</span> Points forts :
                                 </span>
-                                <ul class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
                                     <template x-for="pf in off.points_forts" :key="pf">
                                         <li x-text="pf"></li>
                                     </template>
@@ -1301,10 +1301,10 @@
 
                             <!-- Limites -->
                             <div class="mb-4">
-                                <span class="text-xs font-bold text-red-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                                <span class="text-xs font-bold text-rose-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
                                     <span>✕</span> Limites & Points de vigilance :
                                 </span>
-                                <ul class="text-xs text-slate-700 space-y-1 list-disc list-inside">
+                                <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
                                     <template x-for="pl in off.points_faibles" :key="pl">
                                         <li x-text="pl"></li>
                                     </template>
@@ -1312,11 +1312,11 @@
                             </div>
 
                             <!-- Questions à poser au vendeur -->
-                            <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-xl">
-                                <span class="text-xs font-bold text-amber-900 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                            <div class="p-4 bg-amber-950/40 border border-amber-500/30 rounded-2xl">
+                                <span class="text-xs font-bold text-amber-300 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
                                     <span>❓</span> À confirmer auprès du vendeur avant réservation :
                                 </span>
-                                <ul class="text-[11px] text-amber-900 space-y-1 list-disc list-inside">
+                                <ul class="text-[11px] text-amber-200 space-y-1 list-disc list-inside">
                                     <template x-for="q in off.points_a_clarifier" :key="q">
                                         <li x-text="q"></li>
                                     </template>
@@ -1329,10 +1329,10 @@
 
             <!-- Boutons de fin de rapport -->
             <div class="flex justify-between items-center no-print">
-                <button @click="step = 2" class="text-xs font-bold text-slate-700 hover:text-black">
+                <button @click="step = 2" class="text-xs font-bold text-slate-400 hover:text-white">
                     ← Revenir à l'édition des offres
                 </button>
-                <button @click="printReport()" class="bg-brand-700 hover:bg-brand-800 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow transition">
+                <button @click="printReport()" class="bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-sm px-7 py-3 rounded-xl shadow-xl shadow-cyan-950/50 border border-cyan-400/30 transition">
                     Imprimer le dossier complet 🖨️
                 </button>
             </div>
@@ -1342,7 +1342,7 @@
     </main>
 
     <!-- Footer Neutre & Déontologie -->
-    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 no-print mt-auto">
+    <footer class="bg-slate-950/90 border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 no-print mt-auto">
         <div class="max-w-7xl mx-auto px-4 space-y-1">
             <p class="font-semibold text-slate-700">Comparateur Indépendant d'Offres Touristiques • Conçu pour Voyageurs & Conseillers en Voyages</p>
             <p>Respect strict de la déontologie de l'information : séparation des sources, aucune invention de données ou d'avis, neutralité économique.</p>
@@ -1357,7 +1357,7 @@
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
          style="display: none;">
         
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200"
+        <div class="bg-slate-950 rounded-3xl shadow-2xl border border-slate-800 max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200"
              @click.away="showTeachModal = false">
             
             <!-- Header du Modal -->
@@ -1385,10 +1385,10 @@
             <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700 flex-1">
                 
                 <!-- Sélecteur de champ ciblé et offre -->
-                <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <div class="bento-cell p-4 border-indigo-500/30 bg-indigo-950/40 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div>
-                        <label class="block text-[11px] font-bold text-indigo-950 mb-1">Information ciblée à renseigner :</label>
-                        <select x-model="teachState.fieldKey" @change="onFieldKeyChanged()" class="w-full bg-white border border-indigo-300 font-bold text-indigo-900 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                        <label class="block text-[11px] font-bold text-indigo-200 mb-1">Information ciblée à renseigner :</label>
+                        <select x-model="teachState.fieldKey" @change="onFieldKeyChanged()" class="w-full bg-slate-900 border border-indigo-500/50 font-bold text-white rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-indigo-500 shadow-xs">
                             <option value="taxes_aeroport">✈️ Taxes d'aéroport (€/pers) en supplément</option>
                             <option value="prix_ht">💶 Prix H.T total (€) hors taxes aéroport</option>
                             <option value="prix_total">💶 Prix total TTC (€)</option>
@@ -1407,8 +1407,8 @@
                     </div>
                     <div>
                         <span class="block text-[11px] font-bold text-slate-600 mb-1">Document analysé :</span>
-                        <div class="bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-between text-xs">
-                            <span class="font-bold text-slate-800 truncate" x-text="teachState.offer ? teachState.offer.titre : ''"></span>
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-200 truncate" x-text="teachState.offer ? teachState.offer.titre : ''"></span>
                             <span class="text-[10px] text-slate-500" x-text="teachState.offer ? (teachState.offer.source_reference || 'Fichier') : ''"></span>
                         </div>
                     </div>
@@ -1418,7 +1418,7 @@
                 <div>
                     <div class="flex flex-wrap items-center justify-between pb-1.5 mb-2 gap-2">
                         <div class="flex items-center space-x-1.5">
-                            <span class="font-bold text-slate-900">1. Montrez l'information dans le document :</span>
+                            <span class="font-bold text-white">1. Montrez l'information dans le document :</span>
                             <span class="text-[11px] text-slate-500">(Sélectionnez le texte à la souris dans le cadre ci-dessous)</span>
                         </div>
                         <!-- Barre de recherche rapide dans le texte -->
@@ -1427,7 +1427,7 @@
                                    x-model="teachState.searchQuery" 
                                    @input="updateCandidateLines()" 
                                    placeholder="🔍 Filtrer le texte (ex: taxe, vol, hôtel, prix)..." 
-                                   class="w-full border border-slate-300 rounded-lg px-2.5 py-1 text-xs bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500">
+                                   class="w-full border border-slate-700 rounded-xl px-3 py-1.5 text-xs bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                         </div>
                     </div>
 
@@ -1455,7 +1455,7 @@
                             <template x-for="(line, lIdx) in teachState.candidateLines" :key="lIdx">
                                 <button type="button" 
                                         @click="pickCandidateLine(line)" 
-                                        class="w-full text-left p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition text-[11px] font-mono text-slate-700 truncate flex items-center gap-1.5">
+                                        class="w-full text-left p-1.5 rounded-lg border border-slate-800 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition text-[11px] font-mono text-slate-700 truncate flex items-center gap-1.5">
                                     <span class="text-indigo-600 font-bold shrink-0">👉</span>
                                     <span x-text="line"></span>
                                 </button>
@@ -1465,7 +1465,7 @@
                 </div>
 
                 <!-- Zone 2 : Paramètres d'apprentissage & Déclencheur -->
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div class="bento-cell border border-slate-800 bg-slate-950/70 rounded-2xl p-4 space-y-3">
                     <h4 class="font-bold text-slate-900 text-xs flex items-center gap-2">
                         <span>🧠</span>
                         <span>2. Confirmation de la donnée & Règle d'apprentissage automatique</span>
@@ -1474,31 +1474,31 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <!-- Valeur extraite -->
                         <div>
-                            <label class="block font-bold text-slate-800 text-[11px] mb-1">
+                            <label class="block font-bold text-slate-200 text-[11px] mb-1">
                                 Valeur identifiée :
                             </label>
                             <input type="text" 
                                    x-model="teachState.extractedVal" 
                                    placeholder="ex: 490 ou Air France ou Hôtel Quirinale" 
-                                   class="w-full border border-emerald-300 bg-emerald-50/40 text-emerald-950 font-bold rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500">
+                                   class="w-full border border-emerald-500/50 bg-slate-900 text-emerald-300 font-bold rounded-xl p-2 text-xs focus:ring-2 focus:ring-emerald-500">
                             <span class="text-[10px] text-slate-500 mt-1 block">La donnée qui sera enregistrée sur l'offre actuelle.</span>
                         </div>
 
                         <!-- Mot-clé déclencheur pour le futur -->
                         <div>
-                            <label class="block font-bold text-slate-800 text-[11px] mb-1">
+                            <label class="block font-bold text-slate-200 text-[11px] mb-1">
                                 Expression ou mot-clé déclencheur (pour le futur) :
                             </label>
                             <input type="text" 
                                    x-model="teachState.triggerKeyword" 
                                    placeholder="ex: taxes aériennes obligatoires, compagnie aérienne :" 
-                                   class="w-full border border-indigo-300 bg-indigo-50/40 text-indigo-950 font-bold rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500">
+                                   class="w-full border border-indigo-500/50 bg-slate-900 text-indigo-200 font-bold rounded-xl p-2 text-xs focus:ring-2 focus:ring-indigo-500">
                             <span class="text-[10px] text-slate-500 mt-1 block">Le mot ou l'en-tête qui précède la valeur dans les documents.</span>
                         </div>
                     </div>
 
                     <!-- Aperçu pédagogique de la règle apprise -->
-                    <div class="bg-white border border-indigo-200 rounded-lg p-3 text-[11px] text-indigo-900 space-y-1">
+                    <div class="bento-cell border border-indigo-500/30 bg-indigo-950/50 rounded-xl p-3 text-[11px] text-indigo-200 space-y-1">
                         <div class="font-bold flex items-center gap-1.5 text-indigo-950">
                             <span>✨</span>
                             <span>Ce que le comparateur va mémoriser :</span>
@@ -1513,20 +1513,20 @@
             </div>
 
             <!-- Footer d'actions -->
-            <div class="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="px-6 py-3.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
                 <button type="button" @click="showTeachModal = false" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-1.5">
                     Annuler
                 </button>
                 <div class="flex items-center space-x-2">
                     <button type="button" 
                             @click="applyValueOnly()" 
-                            class="bg-white hover:bg-slate-50 text-slate-700 font-semibold border border-slate-300 px-3.5 py-2 rounded-xl text-xs shadow-xs transition">
+                            class="bento-cell hover:bg-slate-800 text-slate-300 hover:text-white font-semibold border border-slate-700 px-3.5 py-2 rounded-xl text-xs shadow-xs transition">
                         Appliquer à cette offre uniquement
                     </button>
                     <button type="button" 
                             @click="learnAndApplyRule()" 
                             :disabled="!teachState.extractedVal"
-                            class="bg-brand-700 hover:bg-brand-800 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                            class="bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 disabled:opacity-30 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-xl shadow-cyan-950/50 border border-cyan-400/30 transition flex items-center gap-1.5">
                         <span>💾</span>
                         <span>Valider & Apprendre pour le futur</span>
                     </button>
@@ -1544,7 +1544,7 @@
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
          style="display: none;">
         
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200"
+        <div class="bg-slate-950 rounded-3xl shadow-2xl border border-slate-800 max-w-3xl w-full overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200"
              @click.away="showRulesModal = false">
             
             <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
@@ -1576,7 +1576,7 @@
 
                 <div class="space-y-2.5" x-show="learnedRules.length > 0">
                     <template x-for="rule in learnedRules" :key="rule.id">
-                        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 flex flex-wrap items-center justify-between gap-3 transition">
+                        <div class="p-3 rounded-xl border border-slate-800 bg-slate-50/70 hover:bg-slate-50 flex flex-wrap items-center justify-between gap-3 transition">
                             <div class="space-y-1">
                                 <div class="flex items-center space-x-2">
                                     <span class="font-bold text-slate-900 text-xs" x-text="rule.fieldLabel"></span>
@@ -1601,11 +1601,11 @@
                 </div>
             </div>
 
-            <div class="px-6 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+            <div class="px-6 py-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
                 <button type="button" @click="resetLearnedRules()" class="text-xs text-red-600 hover:text-red-800 hover:underline">
                     Réinitialiser les règles
                 </button>
-                <button type="button" @click="showRulesModal = false" class="bg-slate-900 hover:bg-black text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                <button type="button" @click="showRulesModal = false" class="bento-cell hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs border border-slate-700 transition">
                     Fermer
                 </button>
             </div>

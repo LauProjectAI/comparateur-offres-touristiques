@@ -1205,10 +1205,10 @@ document.addEventListener('alpine:init', () => {
             });
             this.mapInstance = map;
 
-            // Couche OpenStreetMap
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Couche CartoDB Dark Matter (Dark Premium)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 maxZoom: 18,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }).addTo(map);
 
             this.renderMapLayers();
@@ -1231,26 +1231,26 @@ document.addEventListener('alpine:init', () => {
 
             const steps = itin.steps;
 
-            // 1. Tracé Circuit 1 (Bleu / Indigo)
+            // 1. Tracé Circuit 1 (Néon Indigo / Violet)
             if (this.mapFilter === 'all' || this.mapFilter === 'offer0') {
                 const line0 = steps.map(s => s.coords);
                 const poly0 = L.polyline(line0, {
-                    color: '#4f46e5',
+                    color: '#818cf8',
                     weight: 4,
-                    opacity: 0.85,
+                    opacity: 0.95,
                     lineJoin: 'round'
                 });
                 this.mapFeatureGroup.addLayer(poly0);
             }
 
-            // 2. Tracé Circuit 2 (Émeraude / Vert)
+            // 2. Tracé Circuit 2 (Néon Émeraude / Turquoise)
             if (this.mapFilter === 'all' || this.mapFilter === 'offer1') {
                 const offset = (this.mapFilter === 'all') ? 0.04 : 0.0;
                 const line1 = steps.map(s => [s.coords[0] + offset, s.coords[1] + offset]);
                 const poly1 = L.polyline(line1, {
-                    color: '#059669',
+                    color: '#10b981',
                     weight: 4,
-                    opacity: 0.85,
+                    opacity: 0.95,
                     dashArray: (this.mapFilter === 'all') ? '8, 6' : null,
                     lineJoin: 'round'
                 });
@@ -1260,24 +1260,24 @@ document.addEventListener('alpine:init', () => {
             // 3. Liaison aérienne intérieure (ex: Durban -> Le Cap)
             if (itin.flightPath && (this.mapFilter === 'all' || this.mapFilter === 'offer0' || this.mapFilter === 'offer1')) {
                 const flightLine = L.polyline(itin.flightPath, {
-                    color: '#0284c7',
+                    color: '#38bdf8',
                     weight: 3,
-                    dashArray: '5, 8',
-                    opacity: 0.85
+                    dashArray: '6, 8',
+                    opacity: 0.9
                 });
                 this.mapFeatureGroup.addLayer(flightLine);
             }
 
-            // 4. Marqueurs interactifs avec popups comparatifs
+            // 4. Marqueurs interactifs avec popups comparatifs (Bento Pins néon)
             steps.forEach((step, idx) => {
                 const num = idx + 1;
                 let pinHtml = '';
                 if (this.mapFilter === 'offer0') {
-                    pinHtml = `<div style="background-color:#4f46e5;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${num}</div>`;
+                    pinHtml = `<div style="background-color:#4f46e5;color:#ffffff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2px solid #818cf8;box-shadow:0 0 12px rgba(129,140,248,0.7);">${num}</div>`;
                 } else if (this.mapFilter === 'offer1') {
-                    pinHtml = `<div style="background-color:#059669;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">${num}</div>`;
+                    pinHtml = `<div style="background-color:#065f46;color:#ffffff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2px solid #34d399;box-shadow:0 0 12px rgba(52,211,153,0.7);">${num}</div>`;
                 } else {
-                    pinHtml = `<div style="background:linear-gradient(135deg, #4f46e5 50%, #059669 50%);color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:11px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.35);">${num}</div>`;
+                    pinHtml = `<div style="background:linear-gradient(135deg, #4f46e5 50%, #059669 50%);color:#ffffff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;border:2px solid #ffffff;box-shadow:0 0 14px rgba(255,255,255,0.4);">${num}</div>`;
                 }
 
                 const icon = L.divIcon({
