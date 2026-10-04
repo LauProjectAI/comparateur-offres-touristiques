@@ -158,6 +158,10 @@ class TravelOffer(BaseModel):
     nombre_prestations_incluses: int = 0
     contient_hebergement: bool = False
     
+    # Données textuelles brutes & apprentissage
+    raw_text: Optional[str] = ""
+    points_appris: List[Dict[str, Any]] = Field(default_factory=list)
+
     # Synthèse spécifique
     points_forts: List[str] = Field(default_factory=list)
     points_faibles: List[str] = Field(default_factory=list)

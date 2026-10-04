@@ -84,6 +84,12 @@
                     3. Rapport & Synthèse
                 </button>
             </nav>
+
+            <!-- Bouton Mémoire d'Apprentissage -->
+            <button type="button" @click="showRulesModal = true" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs" title="Consulter la mémoire des règles apprises">
+                <span>🧠</span>
+                <span>Règles apprises (<span x-text="learnedRules.length"></span>)</span>
+            </button>
         </div>
     </header>
 
@@ -309,6 +315,44 @@
                                 </div>
                             </div>
 
+                            <!-- Bannière d'apprentissage actif -->
+                            <div class="bg-gradient-to-r from-amber-50 to-indigo-50 border border-amber-200/80 rounded-xl p-3.5 mb-5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-2xl">🧠</span>
+                                    <div>
+                                        <div class="font-bold text-slate-900 flex items-center gap-2">
+                                            <span>Assistant d'Apprentissage & Informations Manquantes</span>
+                                            <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold" x-text="learnedRules.length + ' règles actives'"></span>
+                                        </div>
+                                        <p class="text-slate-600 text-[11px] mt-0.5">
+                                            Une information est manquante, inexacte ou mal ventilée ? Cliquez sur <strong>« 🎯 Indique-moi l'information »</strong> pour la pointer dans le document. Le comparateur apprendra à la reconnaître automatiquement pour tous vos prochains voyages.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="bg-white hover:bg-slate-50 text-indigo-700 font-bold border border-indigo-200 px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1.5 text-xs">
+                                        <span>🎯</span> Pointer dans le document
+                                    </button>
+                                    <button type="button" @click="showRulesModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1 text-xs">
+                                        <span>Mémoire (<span x-text="learnedRules.length"></span>)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Badge des données reconnues par apprentissage sur cette offre -->
+                            <template x-if="currentOffer.points_appris && currentOffer.points_appris.length > 0">
+                                <div class="mb-5 bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-emerald-600 text-base">✨</span>
+                                        <div>
+                                            <strong class="font-bold">Informations reconnues automatiquement par apprentissage :</strong>
+                                            <span class="text-[11px] text-emerald-800 ml-1" x-text="currentOffer.points_appris.map(p => (p.label || p.field) + ' (' + p.val + ')').join(' • ')"></span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold">Règles appliquées</span>
+                                </div>
+                            </template>
+
                             <!-- Grille des Sections de Données avec Badges de Source et Correction -->
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 
@@ -318,16 +362,27 @@
                                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                                             <span>💶</span> Dates, Durée & Conditions Financières
                                         </h4>
-                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur + Calculs</span>
+                                        <div class="flex items-center space-x-1.5">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="text-[11px] text-amber-800 hover:text-amber-950 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer une information financière manquante dans le document">
+                                                <span>🎯</span> Indique-moi l'information
+                                            </button>
+                                            <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur + Calculs</span>
+                                        </div>
                                     </div>
 
                                     <div class="grid grid-cols-3 gap-3 mb-3 text-xs">
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Jours</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Jours</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'duree_jours', 'Durée en jours')" class="text-[10px] text-slate-400 hover:text-slate-700 underline" title="Pointer dans le document">🎯</button>
+                                            </div>
                                             <input type="number" x-model="currentOffer.duree_jours" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Nuits</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Nuits</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'duree_nuits', 'Durée en nuits')" class="text-[10px] text-slate-400 hover:text-slate-700 underline" title="Pointer dans le document">🎯</button>
+                                            </div>
                                             <input type="number" x-model="currentOffer.duree_nuits" @input="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
                                         </div>
                                         <div>
@@ -350,17 +405,26 @@
                                     <!-- Champs tarifaires pour voyage aérien -->
                                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4 text-xs" x-show="currentOffer.transport.est_vol">
                                         <div>
-                                            <label class="block font-medium text-slate-700 mb-1">Prix H.T total (€)</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-700">Prix H.T total (€)</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'prix_ht', 'Prix H.T total (€)')" class="text-[10px] text-slate-500 hover:text-slate-800 underline" title="Pointer dans le document">🎯</button>
+                                            </div>
                                             <input type="number" x-model="currentOffer.prix.prix_ht" @input="recalculatePrices(currentOffer, 'ht')" class="w-full font-bold text-slate-900 border border-slate-300 rounded p-1.5" title="Prix du forfait hors taxes d'aéroport">
                                             <span class="text-[10px] text-slate-500" x-text="(currentOffer.prix.prix_ht_par_personne || 0) + ' € / pers'"></span>
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-amber-900 mb-1">Taxes aéroport (€/p)</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-bold text-amber-900">Taxes aéroport (€/p)</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'taxes_aeroport', 'Taxes d\'aéroport (€/pers)')" class="text-[10px] text-amber-800 hover:text-amber-950 font-bold underline" title="Pointer dans le document">🎯 Pointer</button>
+                                            </div>
                                             <input type="number" x-model="currentOffer.prix.taxes_aeroport_par_personne" @input="recalculatePrices(currentOffer, 'taxes_aero')" class="w-full font-bold text-amber-900 border border-amber-300 bg-amber-50/50 rounded p-1.5" title="Taxes d'aéroport en supplément par passager">
                                             <span class="text-[10px] text-amber-700" x-text="'+ ' + (currentOffer.prix.taxes_aeroport || 0) + ' € total'"></span>
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-slate-700 mb-1">Prix total TTC (€)</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-700">Prix total TTC (€)</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'prix_total', 'Prix total TTC (€)')" class="text-[10px] text-brand-700 hover:text-brand-900 underline" title="Pointer dans le document">🎯</button>
+                                            </div>
                                             <input type="number" x-model="currentOffer.prix.prix_total_annonce" @input="recalculatePrices(currentOffer, 'total')" class="w-full font-bold text-brand-900 border border-slate-300 rounded p-1.5" title="Forfait TTC incluant taxes aéroport">
                                             <span class="text-[10px] text-brand-700" x-text="Math.round(currentOffer.prix.prix_total_annonce / Math.max(1, currentOffer.prix.nombre_personnes)) + ' € / pers'"></span>
                                         </div>
@@ -437,7 +501,12 @@
                                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                                             <span>🛫</span> Transport & Vol
                                         </h4>
-                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                        <div class="flex items-center space-x-1.5">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'compagnie_aerienne', 'Compagnie aérienne')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer la compagnie aérienne ou le vol dans le document">
+                                                <span>🎯</span> Indique-moi l'information
+                                            </button>
+                                            <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                        </div>
                                     </div>
 
                                     <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
@@ -451,7 +520,10 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Type de vol</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Type de vol</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'vol_direct', 'Type de vol (direct ou escale)')" class="text-[10px] text-indigo-600 underline">🎯</button>
+                                            </div>
                                             <select x-model="currentOffer.transport.vol_direct" class="w-full border border-slate-300 rounded p-1.5">
                                                 <option :value="true">Vol direct</option>
                                                 <option :value="false">Avec escale(s)</option>
@@ -461,7 +533,10 @@
                                     </div>
 
                                     <div class="mb-3 text-xs">
-                                        <label class="block font-medium text-slate-600 mb-1">Compagnie aérienne</label>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="font-medium text-slate-600">Compagnie aérienne</label>
+                                            <button type="button" @click="openTeachModal(currentOffer, 'compagnie_aerienne', 'Compagnie aérienne')" class="text-[10px] text-indigo-600 hover:text-indigo-900 underline font-semibold">🎯 Pointer dans le document</button>
+                                        </div>
                                         <input type="text" x-model="currentOffer.transport.compagnie_aerienne" class="w-full border border-slate-300 rounded p-1.5 mb-1.5">
                                         <label class="inline-flex items-center text-slate-600 text-[11px]">
                                             <input type="checkbox" x-model="currentOffer.transport.compagnie_nommee_clairement" class="rounded mr-1.5 text-brand-600">
@@ -481,7 +556,12 @@
                                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                                             <span>🏨</span> Hébergement (Obligatoire)
                                         </h4>
-                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Données Vendeur & Audit</span>
+                                        <div class="flex items-center space-x-1.5">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'nom_hotel', 'Hôtels / Hébergements')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les hôtels ou le standing dans le document">
+                                                <span>🎯</span> Indique-moi l'information
+                                            </button>
+                                            <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Données Vendeur & Audit</span>
+                                        </div>
                                     </div>
 
                                     <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
@@ -495,13 +575,19 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Standing / Catégorie</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Standing / Catégorie</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'standing_hotel', 'Standing / Catégorie étoiles')" class="text-[10px] text-indigo-600 underline">🎯</button>
+                                            </div>
                                             <input type="text" x-model="currentOffer.hebergement.standing" class="w-full border border-slate-300 rounded p-1.5" placeholder="ex: 4 étoiles">
                                         </div>
                                     </div>
 
                                     <div class="mb-3 text-xs">
-                                        <label class="block font-medium text-slate-600 mb-1">Nom de l'hébergement</label>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="font-medium text-slate-600">Nom de l'hébergement</label>
+                                            <button type="button" @click="openTeachModal(currentOffer, 'nom_hotel', 'Hôtels / Hébergements')" class="text-[10px] text-indigo-600 hover:text-indigo-900 underline font-semibold">🎯 Pointer dans le document</button>
+                                        </div>
                                         <input type="text" x-model="currentOffer.hebergement.nom" class="w-full border border-slate-300 rounded p-1.5 font-bold">
                                     </div>
 
@@ -532,7 +618,12 @@
                                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                                             <span>🍽️</span> Restauration & Prestations Associées
                                         </h4>
-                                        <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                        <div class="flex items-center space-x-1.5">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'guide', 'Guide & Accompagnement')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les prestations ou le guide dans le document">
+                                                <span>🎯</span> Indique-moi l'information
+                                            </button>
+                                            <span class="text-[10px] badge-source-vendeur px-2 py-0.5 rounded font-semibold">Source Vendeur</span>
+                                        </div>
                                     </div>
 
                                     <!-- Restauration -->
@@ -547,7 +638,10 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Formule de repas</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Formule de repas</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'formule_repas', 'Formule de repas')" class="text-[10px] text-indigo-600 underline">🎯</button>
+                                            </div>
                                             <select x-model="currentOffer.restauration.formule" class="w-full border border-slate-300 rounded p-1.5 font-semibold">
                                                 <option value="Bed and Breakfast">Bed and Breakfast</option>
                                                 <option value="Half Board">Half Board (Demi-pension)</option>
@@ -562,7 +656,10 @@
                                     <!-- Activités & Billets -->
                                     <div class="grid grid-cols-2 gap-3 mb-3 text-xs">
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Visites / Activités</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Visites / Activités</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'activites', 'Visites & Activités')" class="text-[10px] text-indigo-600 underline">🎯</button>
+                                            </div>
                                             <select x-model="currentOffer.activites.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
                                                 <option value="inclus">Inclus</option>
                                                 <option value="en_supplement">En supplément</option>
@@ -581,7 +678,10 @@
                                     <!-- Guide & Assurance -->
                                     <div class="grid grid-cols-2 gap-3 text-xs">
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Guide / Accompagnateur</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Guide / Accompagnateur</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'guide', 'Guide & Accompagnement')" class="text-[10px] text-indigo-600 hover:text-indigo-900 underline font-semibold">🎯 Pointer</button>
+                                            </div>
                                             <select x-model="currentOffer.guide.statut" @change="recalculatePrices(currentOffer)" class="w-full border border-slate-300 rounded p-1.5">
                                                 <option value="inclus">Inclus</option>
                                                 <option value="en_supplement">En supplément</option>
@@ -607,12 +707,20 @@
                                         <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                                             <span>🛡️</span> Conditions d'Annulation & Identité du Vendeur
                                         </h4>
-                                        <span class="text-[10px] badge-source-externe px-2 py-0.5 rounded font-semibold">Exigence de Neutralité</span>
+                                        <div class="flex items-center space-x-1.5">
+                                            <button type="button" @click="openTeachModal(currentOffer, 'annulation', 'Conditions & Barème d\'annulation')" class="text-[11px] text-indigo-700 hover:text-indigo-900 font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded flex items-center gap-1 transition shadow-2xs" title="Indiquer les conditions d'annulation dans le document">
+                                                <span>🎯</span> Indique-moi l'information
+                                            </button>
+                                            <span class="text-[10px] badge-source-externe px-2 py-0.5 rounded font-semibold">Exigence de Neutralité</span>
+                                        </div>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                         <div>
-                                            <label class="block font-medium text-slate-600 mb-1">Flexibilité d'annulation</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-600">Flexibilité d'annulation</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'annulation', 'Conditions & Barème d\'annulation')" class="text-[10px] text-indigo-600 hover:text-indigo-900 underline font-semibold">🎯 Pointer dans le doc</button>
+                                            </div>
                                             <select x-model="currentOffer.annulation.flexibilite" class="w-full border border-slate-300 rounded p-1.5 mb-2 font-semibold">
                                                 <option value="Très flexible">Très flexible (Remboursable)</option>
                                                 <option value="Modérée">Modérée (Frais échelonnés)</option>
@@ -623,7 +731,10 @@
                                         </div>
 
                                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                            <label class="block font-medium text-slate-700 mb-1">Organisateur / Vendeur identifié</label>
+                                            <div class="flex items-center justify-between mb-1">
+                                                <label class="font-medium text-slate-700">Organisateur / Vendeur identifié</label>
+                                                <button type="button" @click="openTeachModal(currentOffer, 'vendeur', 'Organisateur / Vendeur')" class="text-[10px] text-indigo-600 underline">🎯 Pointer</button>
+                                            </div>
                                             <input type="text" x-model="currentOffer.vendeur.nom" class="w-full border border-slate-300 rounded p-1.5 mb-2 font-bold bg-white">
                                             <p class="text-[11px] text-slate-600 leading-relaxed" x-text="currentOffer.vendeur.fiabilite_explication"></p>
                                         </div>
@@ -1238,6 +1349,270 @@
             <p>Respect strict de la déontologie de l'information : séparation des sources, aucune invention de données ou d'avis, neutralité économique.</p>
         </div>
     </footer>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 1 : ASSISTANT D'APPRENTISSAGE ACTIF & POINTAGE DOC -->
+    <!-- ======================================================== -->
+    <div x-show="showTeachModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+         style="display: none;">
+        
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200"
+             @click.away="showTeachModal = false">
+            
+            <!-- Header du Modal -->
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center justify-center text-lg">
+                        🎯
+                    </span>
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <span>Indiquer l'information au Comparateur</span>
+                            <span class="text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30 font-normal">Apprentissage Actif</span>
+                        </h3>
+                        <p class="text-xs text-indigo-200/80 mt-0.5">
+                            Pointez la donnée dans le document. Le comparateur met à jour cette offre et apprend la règle pour vos futurs documents.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="showTeachModal = false" class="text-slate-400 hover:text-white text-lg p-1 rounded-lg hover:bg-white/10 transition">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Corps du modal défilable -->
+            <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700 flex-1">
+                
+                <!-- Sélecteur de champ ciblé et offre -->
+                <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="block text-[11px] font-bold text-indigo-950 mb-1">Information ciblée à renseigner :</label>
+                        <select x-model="teachState.fieldKey" @change="onFieldKeyChanged()" class="w-full bg-white border border-indigo-300 font-bold text-indigo-900 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 shadow-xs">
+                            <option value="taxes_aeroport">✈️ Taxes d'aéroport (€/pers) en supplément</option>
+                            <option value="prix_ht">💶 Prix H.T total (€) hors taxes aéroport</option>
+                            <option value="prix_total">💶 Prix total TTC (€)</option>
+                            <option value="duree_jours">📅 Durée en jours</option>
+                            <option value="duree_nuits">🌙 Durée en nuits</option>
+                            <option value="compagnie_aerienne">🛫 Compagnie aérienne</option>
+                            <option value="vol_direct">🛬 Type de vol (direct ou avec escale)</option>
+                            <option value="nom_hotel">🏨 Hôtels / Hébergements prévus</option>
+                            <option value="standing_hotel">⭐ Standing / Catégorie étoiles de l'hôtel</option>
+                            <option value="formule_repas">🍽️ Formule de restauration (BB, Demi-pension...)</option>
+                            <option value="activites">🎟️ Visites & Activités incluses</option>
+                            <option value="guide">🗣️ Guide (qualification / accompagnateur)</option>
+                            <option value="annulation">🛡️ Conditions & Barème d'annulation</option>
+                            <option value="vendeur">🏢 Organisateur / Nom de l'agence</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] font-bold text-slate-600 mb-1">Document analysé :</span>
+                        <div class="bg-white border border-slate-200 rounded-lg p-2 flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-800 truncate" x-text="teachState.offer ? teachState.offer.titre : ''"></span>
+                            <span class="text-[10px] text-slate-500" x-text="teachState.offer ? (teachState.offer.source_reference || 'Fichier') : ''"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone 1 : Visualiseur de texte et sélection avec la souris -->
+                <div>
+                    <div class="flex flex-wrap items-center justify-between pb-1.5 mb-2 gap-2">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="font-bold text-slate-900">1. Montrez l'information dans le document :</span>
+                            <span class="text-[11px] text-slate-500">(Sélectionnez le texte à la souris dans le cadre ci-dessous)</span>
+                        </div>
+                        <!-- Barre de recherche rapide dans le texte -->
+                        <div class="w-full sm:w-64">
+                            <input type="text" 
+                                   x-model="teachState.searchQuery" 
+                                   @input="updateCandidateLines()" 
+                                   placeholder="🔍 Filtrer le texte (ex: taxe, vol, hôtel, prix)..." 
+                                   class="w-full border border-slate-300 rounded-lg px-2.5 py-1 text-xs bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Cadre de sélection textuelle -->
+                    <div class="border border-slate-300 rounded-xl overflow-hidden shadow-inner bg-slate-900">
+                        <div class="bg-slate-800/80 px-3 py-1.5 border-b border-slate-700 text-[11px] text-slate-300 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Surbrillance active : sélectionnez les mots ou le montant dans le document avec votre curseur</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono" x-text="teachState.documentText.length + ' caractères'"></span>
+                        </div>
+                        <div class="p-3 text-slate-100 font-mono text-[11px] max-h-48 overflow-y-auto leading-relaxed whitespace-pre-wrap select-text cursor-text"
+                             @mouseup="handleDocumentSelection()"
+                             x-text="teachState.documentText">
+                        </div>
+                    </div>
+
+                    <!-- Lignes suggérées ou filtrées cliquables -->
+                    <div class="mt-2.5" x-show="teachState.candidateLines.length > 0">
+                        <span class="text-[11px] font-semibold text-slate-600 block mb-1">
+                            Lignes pertinentes trouvées (cliquez pour pointer rapidement) :
+                        </span>
+                        <div class="max-h-24 overflow-y-auto space-y-1 pr-1">
+                            <template x-for="(line, lIdx) in teachState.candidateLines" :key="lIdx">
+                                <button type="button" 
+                                        @click="pickCandidateLine(line)" 
+                                        class="w-full text-left p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition text-[11px] font-mono text-slate-700 truncate flex items-center gap-1.5">
+                                    <span class="text-indigo-600 font-bold shrink-0">👉</span>
+                                    <span x-text="line"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone 2 : Paramètres d'apprentissage & Déclencheur -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-slate-900 text-xs flex items-center gap-2">
+                        <span>🧠</span>
+                        <span>2. Confirmation de la donnée & Règle d'apprentissage automatique</span>
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Valeur extraite -->
+                        <div>
+                            <label class="block font-bold text-slate-800 text-[11px] mb-1">
+                                Valeur identifiée :
+                            </label>
+                            <input type="text" 
+                                   x-model="teachState.extractedVal" 
+                                   placeholder="ex: 490 ou Air France ou Hôtel Quirinale" 
+                                   class="w-full border border-emerald-300 bg-emerald-50/40 text-emerald-950 font-bold rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500">
+                            <span class="text-[10px] text-slate-500 mt-1 block">La donnée qui sera enregistrée sur l'offre actuelle.</span>
+                        </div>
+
+                        <!-- Mot-clé déclencheur pour le futur -->
+                        <div>
+                            <label class="block font-bold text-slate-800 text-[11px] mb-1">
+                                Expression ou mot-clé déclencheur (pour le futur) :
+                            </label>
+                            <input type="text" 
+                                   x-model="teachState.triggerKeyword" 
+                                   placeholder="ex: taxes aériennes obligatoires, compagnie aérienne :" 
+                                   class="w-full border border-indigo-300 bg-indigo-50/40 text-indigo-950 font-bold rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500">
+                            <span class="text-[10px] text-slate-500 mt-1 block">Le mot ou l'en-tête qui précède la valeur dans les documents.</span>
+                        </div>
+                    </div>
+
+                    <!-- Aperçu pédagogique de la règle apprise -->
+                    <div class="bg-white border border-indigo-200 rounded-lg p-3 text-[11px] text-indigo-900 space-y-1">
+                        <div class="font-bold flex items-center gap-1.5 text-indigo-950">
+                            <span>✨</span>
+                            <span>Ce que le comparateur va mémoriser :</span>
+                        </div>
+                        <p class="leading-relaxed">
+                            Chaque fois qu'un document mentionnera <strong class="text-indigo-700 bg-indigo-100 px-1 py-0.5 rounded">« <span x-text="teachState.triggerKeyword || 'votre mot-clé'"></span> »</strong>, 
+                            le comparateur saura que la donnée qui suit correspond à <strong class="text-brand-800 bg-brand-100 px-1 py-0.5 rounded" x-text="teachState.fieldLabel"></strong> et l'extraira automatiquement.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer d'actions -->
+            <div class="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <button type="button" @click="showTeachModal = false" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-1.5">
+                    Annuler
+                </button>
+                <div class="flex items-center space-x-2">
+                    <button type="button" 
+                            @click="applyValueOnly()" 
+                            class="bg-white hover:bg-slate-50 text-slate-700 font-semibold border border-slate-300 px-3.5 py-2 rounded-xl text-xs shadow-xs transition">
+                        Appliquer à cette offre uniquement
+                    </button>
+                    <button type="button" 
+                            @click="learnAndApplyRule()" 
+                            :disabled="!teachState.extractedVal"
+                            class="bg-brand-700 hover:bg-brand-800 disabled:opacity-40 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                        <span>💾</span>
+                        <span>Valider & Apprendre pour le futur</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2 : BIBLIOTHÈQUE DES RÈGLES APPRISES (MÉMOIRE)      -->
+    <!-- ======================================================== -->
+    <div x-show="showRulesModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5"
+         style="display: none;">
+        
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200"
+             @click.away="showRulesModal = false">
+            
+            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-base">
+                        🧠
+                    </span>
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <span>Mémoire d'Apprentissage du Comparateur</span>
+                            <span class="text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-full border border-indigo-400/30" x-text="learnedRules.length + ' règles'"></span>
+                        </h3>
+                        <p class="text-xs text-slate-300">Ces règles sont automatiquement exécutées lors de chaque analyse de document PDF, Word ou Excel.</p>
+                    </div>
+                </div>
+                <button type="button" @click="showRulesModal = false" class="text-slate-400 hover:text-white text-lg p-1 rounded-lg hover:bg-white/10 transition">
+                    ✕
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+                <template x-if="learnedRules.length === 0">
+                    <div class="text-center py-8 text-slate-400">
+                        <span class="text-3xl block mb-2">📭</span>
+                        <p class="font-medium text-slate-600">Aucune règle d'apprentissage mémorisée pour le moment.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Utilisez le bouton « 🎯 Indique-moi l'information » sur vos documents pour en ajouter.</p>
+                    </div>
+                </template>
+
+                <div class="space-y-2.5" x-show="learnedRules.length > 0">
+                    <template x-for="rule in learnedRules" :key="rule.id">
+                        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 flex flex-wrap items-center justify-between gap-3 transition">
+                            <div class="space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-slate-900 text-xs" x-text="rule.fieldLabel"></span>
+                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded" x-text="'Déclencheur : « ' + rule.triggerKeyword + ' »'"></span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 flex items-center space-x-3">
+                                    <span>Exemple retenu : <strong class="text-slate-700" x-text="rule.valueSample"></strong></span>
+                                    <span>•</span>
+                                    <span>Appliquée : <strong class="text-emerald-700" x-text="(rule.timesApplied || 0) + ' fois'"></strong></span>
+                                    <span>•</span>
+                                    <span x-text="'Créée le ' + rule.createdAt"></span>
+                                </div>
+                            </div>
+                            <button type="button" 
+                                    @click="deleteLearnedRule(rule.id)" 
+                                    class="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-lg transition" 
+                                    title="Supprimer cette règle d'apprentissage">
+                                🗑️
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="px-6 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+                <button type="button" @click="resetLearnedRules()" class="text-xs text-red-600 hover:text-red-800 hover:underline">
+                    Réinitialiser les règles
+                </button>
+                <button type="button" @click="showRulesModal = false" class="bg-slate-900 hover:bg-black text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                    Fermer
+                </button>
+            </div>
+
+        </div>
+    </div>
 
 </body>
 </html>

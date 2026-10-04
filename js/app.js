@@ -26,6 +26,24 @@ document.addEventListener('alpine:init', () => {
         mapFilter: 'all', // 'all', 'offer0', 'offer1'
         selectedStepId: null,
         
+        // Système d'apprentissage actif & mémorisation des règles d'extraction
+        learnedRules: [],
+        showTeachModal: false,
+        showRulesModal: false,
+        teachState: {
+            offer: null,
+            fieldKey: 'taxes_aeroport',
+            fieldLabel: "Taxes aéroport (€/pers)",
+            currentVal: '',
+            documentText: '',
+            searchQuery: '',
+            selectedText: '',
+            triggerKeyword: '',
+            extractedVal: '',
+            statusExplanation: '',
+            candidateLines: []
+        },
+        
         // Pondérations transparentes du score
         weights: {
             poids_prix: 25,
@@ -75,6 +93,8 @@ document.addEventListener('alpine:init', () => {
         ],
 
         init() {
+            // Chargement des règles d'apprentissage acquises
+            this.loadLearnedRules();
             // Initialisation avec les exemples culturels par défaut
             this.loadSampleOffers('culturel', false);
         },
@@ -670,8 +690,9 @@ document.addEventListener('alpine:init', () => {
             }
             const prixHTPers = Math.round((prixHT / nbPersonnes) * 100) / 100;
 
-            return {
+            const newOffer = {
                 id: offerId,
+                raw_text: rawText,
                 titre: titre,
                 source_origine_type: sourceType,
                 source_reference: sourceRef,
@@ -764,10 +785,16 @@ document.addEventListener('alpine:init', () => {
                     avis_vendeur_source: 'Non vérifié',
                     source: 'Non vérifié (source externe inaccessible)'
                 },
+                points_appris: [],
                 points_forts: [],
                 points_faibles: [],
                 points_a_clarifier: []
             };
+
+            // Appliquer automatiquement les règles apprises par l'utilisateur
+            this.applyLearnedRulesToOffer(rawText, newOffer);
+
+            return newOffer;
         },
 
         // Recalcul des prix avec gestion du prix HT et des taxes aéroport en supplément
@@ -1348,6 +1375,568 @@ document.addEventListener('alpine:init', () => {
                 case 'absent': return 'Absent';
                 case 'non_precise': default: return 'Non précisé';
             }
+        },
+
+        // ========================================================
+        // SYSTÈME D'APPRENTISSAGE ACTIF & POINTAGE DOCUMENT
+        // ========================================================
+
+        loadLearnedRules() {
+            try {
+                const stored = localStorage.getItem('tourist_comparator_learned_rules');
+                if (stored) {
+                    this.learnedRules = JSON.parse(stored);
+                } else {
+                    this.learnedRules = [
+                        {
+                            id: 'rule_seed_taxe_aero',
+                            fieldKey: 'taxes_aeroport',
+                            fieldLabel: "Taxes aéroport (€/pers)",
+                            triggerKeyword: 'taxes aériennes obligatoires',
+                            patternType: 'number',
+                            valueSample: '490 €',
+                            learnedFromDocument: 'Charmes de l\'Afrique du Sud 2026',
+                            createdAt: new Date().toLocaleDateString('fr-FR'),
+                            timesApplied: 1
+                        },
+                        {
+                            id: 'rule_seed_redevances',
+                            fieldKey: 'taxes_aeroport',
+                            fieldLabel: "Taxes aéroport (€/pers)",
+                            triggerKeyword: 'redevances aéroportuaires',
+                            patternType: 'number',
+                            valueSample: '380 €',
+                            learnedFromDocument: 'Exemple standard',
+                            createdAt: new Date().toLocaleDateString('fr-FR'),
+                            timesApplied: 0
+                        }
+                    ];
+                    this.saveLearnedRules();
+                }
+            } catch (e) {
+                console.error("Erreur chargement des règles apprises :", e);
+                this.learnedRules = [];
+            }
+        },
+
+        saveLearnedRules() {
+            try {
+                localStorage.setItem('tourist_comparator_learned_rules', JSON.stringify(this.learnedRules));
+            } catch (e) {
+                console.error("Erreur sauvegarde des règles apprises :", e);
+            }
+        },
+
+        deleteLearnedRule(id) {
+            this.learnedRules = this.learnedRules.filter(r => r.id !== id);
+            this.saveLearnedRules();
+            this.successMessage = "Règle d'apprentissage supprimée.";
+            setTimeout(() => this.successMessage = '', 3000);
+        },
+
+        resetLearnedRules() {
+            if (confirm("Voulez-vous réinitialiser toutes les règles apprises aux valeurs d'origine ?")) {
+                localStorage.removeItem('tourist_comparator_learned_rules');
+                this.loadLearnedRules();
+                this.successMessage = "Règles d'apprentissage réinitialisées.";
+                setTimeout(() => this.successMessage = '', 3000);
+            }
+        },
+
+        openTeachModal(offer = null, fieldKey = 'taxes_aeroport', fieldLabel = null) {
+            if (!offer) {
+                offer = this.offers[this.activeTabOfferIndex] || this.offers[0];
+            }
+            if (!offer) return;
+
+            const labels = {
+                'taxes_aeroport': "Taxes aéroport (€/pers)",
+                'prix_ht': "Prix H.T total (€)",
+                'prix_total': "Prix total TTC (€)",
+                'duree_jours': "Durée en jours",
+                'duree_nuits': "Durée en nuits",
+                'compagnie_aerienne': "Compagnie aérienne",
+                'vol_direct': "Type de vol (direct ou escale)",
+                'nom_hotel': "Hôtels / Hébergements",
+                'standing_hotel': "Standing / Étoiles de l'hôtel",
+                'formule_repas': "Formule de repas",
+                'activites': "Visites & Activités",
+                'guide': "Guide & Accompagnement",
+                'annulation': "Conditions & Barème d'annulation",
+                'vendeur': "Organisateur / Vendeur"
+            };
+
+            const defaultSearches = {
+                'taxes_aeroport': "taxe",
+                'prix_ht': "ht",
+                'prix_total': "prix",
+                'duree_jours': "jour",
+                'duree_nuits': "nuit",
+                'compagnie_aerienne': "vol",
+                'vol_direct': "escale",
+                'nom_hotel': "hotel",
+                'standing_hotel': "étoile",
+                'formule_repas': "pension",
+                'activites': "visite",
+                'guide': "guide",
+                'annulation': "annul",
+                'vendeur': "agence"
+            };
+
+            const docText = offer.raw_text || this.generateSampleDocumentText(offer);
+
+            this.teachState = {
+                offer: offer,
+                fieldKey: fieldKey,
+                fieldLabel: fieldLabel || labels[fieldKey] || fieldKey,
+                currentVal: this.getFieldValue(offer, fieldKey),
+                documentText: docText,
+                searchQuery: defaultSearches[fieldKey] || '',
+                selectedText: '',
+                triggerKeyword: this.getDefaultTriggerKeyword(fieldKey),
+                extractedVal: '',
+                statusExplanation: '',
+                candidateLines: []
+            };
+
+            this.updateCandidateLines();
+            this.showTeachModal = true;
+        },
+
+        onFieldKeyChanged() {
+            const labels = {
+                'taxes_aeroport': "Taxes aéroport (€/pers)",
+                'prix_ht': "Prix H.T total (€)",
+                'prix_total': "Prix total TTC (€)",
+                'duree_jours': "Durée en jours",
+                'duree_nuits': "Durée en nuits",
+                'compagnie_aerienne': "Compagnie aérienne",
+                'vol_direct': "Type de vol (direct ou escale)",
+                'nom_hotel': "Hôtels / Hébergements",
+                'standing_hotel': "Standing / Étoiles de l'hôtel",
+                'formule_repas': "Formule de repas",
+                'activites': "Visites & Activités",
+                'guide': "Guide & Accompagnement",
+                'annulation': "Conditions & Barème d'annulation",
+                'vendeur': "Organisateur / Vendeur"
+            };
+            const defaultSearches = {
+                'taxes_aeroport': "taxe",
+                'prix_ht': "ht",
+                'prix_total': "prix",
+                'duree_jours': "jour",
+                'duree_nuits': "nuit",
+                'compagnie_aerienne': "vol",
+                'vol_direct': "escale",
+                'nom_hotel': "hotel",
+                'standing_hotel': "étoile",
+                'formule_repas': "pension",
+                'activites': "visite",
+                'guide': "guide",
+                'annulation': "annul",
+                'vendeur': "agence"
+            };
+            this.teachState.fieldLabel = labels[this.teachState.fieldKey] || this.teachState.fieldKey;
+            this.teachState.currentVal = this.getFieldValue(this.teachState.offer, this.teachState.fieldKey);
+            this.teachState.searchQuery = defaultSearches[this.teachState.fieldKey] || '';
+            this.teachState.triggerKeyword = this.getDefaultTriggerKeyword(this.teachState.fieldKey);
+            this.updateCandidateLines();
+        },
+
+        getFieldValue(offer, fieldKey) {
+            if (!offer) return '';
+            switch (fieldKey) {
+                case 'taxes_aeroport': return (offer.prix && offer.prix.taxes_aeroport_par_personne) || 0;
+                case 'prix_ht': return (offer.prix && offer.prix.prix_ht) || 0;
+                case 'prix_total': return (offer.prix && offer.prix.prix_total_annonce) || 0;
+                case 'duree_jours': return offer.duree_jours || 0;
+                case 'duree_nuits': return offer.duree_nuits || 0;
+                case 'compagnie_aerienne': return (offer.transport && offer.transport.compagnie_aerienne) || '';
+                case 'vol_direct': return (offer.transport && offer.transport.vol_direct === true ? 'Direct' : (offer.transport && offer.transport.vol_direct === false ? 'Escale' : 'Non précisé'));
+                case 'nom_hotel': return (offer.hebergement && offer.hebergement.nom) || '';
+                case 'standing_hotel': return (offer.hebergement && offer.hebergement.standing) || '';
+                case 'formule_repas': return (offer.restauration && offer.restauration.formule) || '';
+                case 'activites': return (offer.activites && offer.activites.description) || '';
+                case 'guide': return (offer.guide && offer.guide.qualification) || '';
+                case 'annulation': return (offer.annulation && offer.annulation.conditions_detaillees) || '';
+                case 'vendeur': return (offer.vendeur && offer.vendeur.nom) || '';
+                default: return '';
+            }
+        },
+
+        getDefaultTriggerKeyword(fieldKey) {
+            switch (fieldKey) {
+                case 'taxes_aeroport': return 'taxes aériennes obligatoires';
+                case 'prix_ht': return 'prix net hors taxes';
+                case 'prix_total': return 'prix total ttc';
+                case 'duree_jours': return 'durée du séjour';
+                case 'duree_nuits': return 'nombre de nuits';
+                case 'compagnie_aerienne': return 'compagnie aérienne :';
+                case 'vol_direct': return 'vols réguliers';
+                case 'nom_hotel': return 'hôtels prévus :';
+                case 'standing_hotel': return 'catégorie hôtelière :';
+                case 'formule_repas': return 'formule de repas :';
+                case 'activites': return 'programme des visites :';
+                case 'guide': return 'guide accompagnateur :';
+                case 'annulation': return 'barème d\'annulation :';
+                case 'vendeur': return 'organisé par :';
+                default: return '';
+            }
+        },
+
+        updateCandidateLines() {
+            if (!this.teachState.documentText) {
+                this.teachState.candidateLines = [];
+                return;
+            }
+            const q = (this.teachState.searchQuery || '').toLowerCase().trim();
+            const rawLines = this.teachState.documentText.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+            if (!q) {
+                this.teachState.candidateLines = rawLines.slice(0, 25);
+            } else {
+                this.teachState.candidateLines = rawLines.filter(l => l.toLowerCase().includes(q)).slice(0, 30);
+            }
+        },
+
+        handleDocumentSelection() {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed) return;
+            const text = sel.toString().trim();
+            if (!text || text.length < 1) return;
+
+            this.teachState.selectedText = text;
+
+            if (this.teachState.fieldKey.includes('taxes') || this.teachState.fieldKey.includes('prix') || this.teachState.fieldKey.includes('duree')) {
+                const mNum = text.match(/(\d+[\s\.,]?\d*)/);
+                if (mNum) {
+                    this.teachState.extractedVal = mNum[1].replace(/\s/g, '');
+                } else {
+                    this.teachState.extractedVal = text;
+                }
+            } else {
+                this.teachState.extractedVal = text;
+            }
+
+            // Détection automatique du mot-clé ou libellé précédant la sélection
+            const doc = this.teachState.documentText;
+            const pos = doc.indexOf(text);
+            if (pos > 0) {
+                const prefixSnippet = doc.substring(Math.max(0, pos - 70), pos);
+                const lines = prefixSnippet.split(/\n|;/);
+                let cand = lines[lines.length - 1].trim();
+                cand = cand.replace(/[:\-–—\.]+\s*$/, '').trim();
+                if (cand.length >= 3 && cand.length <= 50) {
+                    this.teachState.triggerKeyword = cand;
+                }
+            }
+        },
+
+        pickCandidateLine(line) {
+            this.teachState.selectedText = line;
+            if (this.teachState.fieldKey.includes('taxes') || this.teachState.fieldKey.includes('prix') || this.teachState.fieldKey.includes('duree')) {
+                const mNum = line.match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR)?/i);
+                if (mNum) {
+                    this.teachState.extractedVal = mNum[1].replace(/\s/g, '');
+                } else {
+                    this.teachState.extractedVal = line;
+                }
+            } else {
+                this.teachState.extractedVal = line;
+            }
+
+            const parts = line.split(/[:\-–]/);
+            if (parts.length > 1 && parts[0].trim().length >= 3 && parts[0].trim().length <= 50) {
+                this.teachState.triggerKeyword = parts[0].trim();
+            }
+        },
+
+        learnAndApplyRule() {
+            if (!this.teachState.offer) return;
+            const val = String(this.teachState.extractedVal || '').trim();
+            const trigger = String(this.teachState.triggerKeyword || '').trim();
+
+            if (!val) {
+                alert("Veuillez indiquer ou sélectionner la valeur de l'information dans le document.");
+                return;
+            }
+
+            this.applyValueToOffer(this.teachState.offer, this.teachState.fieldKey, val);
+
+            if (trigger) {
+                const newRule = {
+                    id: 'rule_' + Date.now(),
+                    fieldKey: this.teachState.fieldKey,
+                    fieldLabel: this.teachState.fieldLabel,
+                    triggerKeyword: trigger,
+                    patternType: (this.teachState.fieldKey.includes('taxes') || this.teachState.fieldKey.includes('prix') || this.teachState.fieldKey.includes('duree')) ? 'number' : 'text',
+                    valueSample: val,
+                    learnedFromDocument: this.teachState.offer.source_reference || this.teachState.offer.titre,
+                    createdAt: new Date().toLocaleDateString('fr-FR'),
+                    timesApplied: 1
+                };
+
+                const existingIdx = this.learnedRules.findIndex(r => r.triggerKeyword.toLowerCase() === trigger.toLowerCase() && r.fieldKey === this.teachState.fieldKey);
+                if (existingIdx >= 0) {
+                    this.learnedRules[existingIdx] = newRule;
+                } else {
+                    this.learnedRules.unshift(newRule);
+                }
+                this.saveLearnedRules();
+
+                this.successMessage = `✨ Règle « ${trigger} » mémorisée avec succès ! L'information est appliquée et sera automatiquement reconnue dans tous vos futurs documents.`;
+            } else {
+                this.successMessage = `Information « ${this.teachState.fieldLabel} » mise à jour.`;
+            }
+
+            setTimeout(() => this.successMessage = '', 6000);
+            this.showTeachModal = false;
+        },
+
+        applyValueOnly() {
+            if (!this.teachState.offer) return;
+            const val = String(this.teachState.extractedVal || '').trim();
+            if (!val) {
+                alert("Veuillez indiquer ou sélectionner la valeur.");
+                return;
+            }
+            this.applyValueToOffer(this.teachState.offer, this.teachState.fieldKey, val);
+            this.successMessage = `Information mise à jour pour cette offre uniquement.`;
+            setTimeout(() => this.successMessage = '', 4000);
+            this.showTeachModal = false;
+        },
+
+        applyValueToOffer(offer, fieldKey, val) {
+            if (!offer) return;
+            if (!offer.points_appris) offer.points_appris = [];
+
+            switch (fieldKey) {
+                case 'taxes_aeroport': {
+                    const num = parseFloat(String(val).replace(/[^\d,\.]/g, '').replace(',', '.')) || 0;
+                    if (!offer.prix) offer.prix = {};
+                    offer.prix.taxes_aeroport_par_personne = num;
+                    offer.prix.taxes_aeroport = Math.round(num * Math.max(1, offer.prix.nombre_personnes || 2) * 100) / 100;
+                    offer.prix.taxes_aeroport_statut = num > 0 ? 'en_supplement' : 'incluses_non_ventilees';
+                    this.recalculatePrices(offer, 'taxes_aero');
+                    break;
+                }
+                case 'prix_ht': {
+                    const num = parseFloat(String(val).replace(/[^\d,\.]/g, '').replace(',', '.')) || 0;
+                    if (!offer.prix) offer.prix = {};
+                    offer.prix.prix_ht = num;
+                    this.recalculatePrices(offer, 'ht');
+                    break;
+                }
+                case 'prix_total': {
+                    const num = parseFloat(String(val).replace(/[^\d,\.]/g, '').replace(',', '.')) || 0;
+                    if (!offer.prix) offer.prix = {};
+                    offer.prix.prix_total_annonce = num;
+                    this.recalculatePrices(offer, 'total');
+                    break;
+                }
+                case 'duree_jours': {
+                    offer.duree_jours = parseInt(val) || offer.duree_jours;
+                    this.recalculatePrices(offer);
+                    break;
+                }
+                case 'duree_nuits': {
+                    offer.duree_nuits = parseInt(val) || offer.duree_nuits;
+                    this.recalculatePrices(offer);
+                    break;
+                }
+                case 'compagnie_aerienne': {
+                    if (!offer.transport) offer.transport = {};
+                    offer.transport.compagnie_aerienne = val;
+                    offer.transport.compagnie_nommee_clairement = true;
+                    break;
+                }
+                case 'vol_direct': {
+                    if (!offer.transport) offer.transport = {};
+                    offer.transport.vol_direct = /direct|sans escale/i.test(val);
+                    break;
+                }
+                case 'nom_hotel': {
+                    if (!offer.hebergement) offer.hebergement = {};
+                    offer.hebergement.nom = val;
+                    break;
+                }
+                case 'standing_hotel': {
+                    if (!offer.hebergement) offer.hebergement = {};
+                    offer.hebergement.standing = val;
+                    break;
+                }
+                case 'formule_repas': {
+                    if (!offer.restauration) offer.restauration = {};
+                    offer.restauration.formule = val;
+                    offer.restauration.description = val;
+                    break;
+                }
+                case 'activites': {
+                    if (!offer.activites) offer.activites = {};
+                    offer.activites.description = val;
+                    break;
+                }
+                case 'guide': {
+                    if (!offer.guide) offer.guide = {};
+                    offer.guide.qualification = val;
+                    offer.guide.description = val;
+                    offer.guide.statut = 'inclus';
+                    break;
+                }
+                case 'annulation': {
+                    if (!offer.annulation) offer.annulation = {};
+                    offer.annulation.conditions_detaillees = val;
+                    if (/sans frais|gratuite|100%/i.test(val)) offer.annulation.flexibilite = 'Très flexible';
+                    else if (/non remboursable/i.test(val)) offer.annulation.flexibilite = 'Stricte';
+                    else offer.annulation.flexibilite = 'Barème standard';
+                    break;
+                }
+                case 'vendeur': {
+                    if (!offer.vendeur) offer.vendeur = {};
+                    offer.vendeur.nom = val;
+                    break;
+                }
+            }
+
+            offer.points_appris.push({
+                field: fieldKey,
+                label: this.teachState.fieldLabel,
+                val: val,
+                time: new Date().toLocaleTimeString('fr-FR')
+            });
+
+            this.validateAllOffers();
+        },
+
+        applyLearnedRulesToOffer(rawText, offer) {
+            if (!this.learnedRules || this.learnedRules.length === 0 || !rawText) return [];
+            const applied = [];
+
+            for (const rule of this.learnedRules) {
+                if (!rule.triggerKeyword) continue;
+                const trig = rule.triggerKeyword.trim();
+                const escTrig = trig.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+
+                if (rule.fieldKey === 'taxes_aeroport') {
+                    const regex = new RegExp(escTrig + '[^\\n\\d]{0,50}?(\\d+[\\s\\.,]?\\d*)', 'i');
+                    const m = rawText.match(regex);
+                    if (m) {
+                        const valNum = parseFloat(m[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                        if (valNum >= 15 && valNum <= 2500) {
+                            offer.prix.taxes_aeroport_par_personne = valNum;
+                            offer.prix.taxes_aeroport = Math.round(valNum * Math.max(1, offer.prix.nombre_personnes || 2) * 100) / 100;
+                            offer.prix.taxes_aeroport_statut = 'en_supplement';
+                            this.recalculatePrices(offer, 'taxes_aero');
+                            rule.timesApplied = (rule.timesApplied || 0) + 1;
+                            applied.push({ rule: rule, val: `${valNum} €` });
+                        }
+                    }
+                } else if (rule.fieldKey === 'prix_ht') {
+                    const regex = new RegExp(escTrig + '[^\\n\\d]{0,50}?(\\d+[\\s\\.,]?\\d*)', 'i');
+                    const m = rawText.match(regex);
+                    if (m) {
+                        const valNum = parseFloat(m[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                        if (valNum >= 100 && valNum <= 50000) {
+                            offer.prix.prix_ht = valNum;
+                            this.recalculatePrices(offer, 'ht');
+                            rule.timesApplied = (rule.timesApplied || 0) + 1;
+                            applied.push({ rule: rule, val: `${valNum} €` });
+                        }
+                    }
+                } else if (rule.fieldKey === 'compagnie_aerienne') {
+                    const regex = new RegExp(escTrig + '[:\\s\\-]*([^\\n\\r,;.]{3,40})', 'i');
+                    const m = rawText.match(regex);
+                    if (m && m[1].trim()) {
+                        offer.transport.compagnie_aerienne = m[1].trim();
+                        offer.transport.compagnie_nommee_clairement = true;
+                        rule.timesApplied = (rule.timesApplied || 0) + 1;
+                        applied.push({ rule: rule, val: m[1].trim() });
+                    }
+                } else if (rule.fieldKey === 'nom_hotel') {
+                    const regex = new RegExp(escTrig + '[:\\s\\-]*([^\\n\\r]{5,90})', 'i');
+                    const m = rawText.match(regex);
+                    if (m && m[1].trim()) {
+                        offer.hebergement.nom = m[1].trim();
+                        rule.timesApplied = (rule.timesApplied || 0) + 1;
+                        applied.push({ rule: rule, val: m[1].trim() });
+                    }
+                } else if (rule.fieldKey === 'annulation') {
+                    const regex = new RegExp(escTrig + '[:\\s\\-]*([^\\n\\r]{5,120})', 'i');
+                    const m = rawText.match(regex);
+                    if (m && m[1].trim()) {
+                        offer.annulation.conditions_detaillees = m[1].trim();
+                        rule.timesApplied = (rule.timesApplied || 0) + 1;
+                        applied.push({ rule: rule, val: m[1].trim() });
+                    }
+                } else if (rule.fieldKey === 'guide') {
+                    const regex = new RegExp(escTrig + '[:\\s\\-]*([^\\n\\r]{4,80})', 'i');
+                    const m = rawText.match(regex);
+                    if (m && m[1].trim()) {
+                        offer.guide.qualification = m[1].trim();
+                        offer.guide.description = m[1].trim();
+                        offer.guide.statut = 'inclus';
+                        rule.timesApplied = (rule.timesApplied || 0) + 1;
+                        applied.push({ rule: rule, val: m[1].trim() });
+                    }
+                } else if (rule.fieldKey === 'vendeur') {
+                    const regex = new RegExp(escTrig + '[:\\s\\-]*([^\\n\\r,;.]{3,50})', 'i');
+                    const m = rawText.match(regex);
+                    if (m && m[1].trim()) {
+                        offer.vendeur.nom = m[1].trim();
+                        rule.timesApplied = (rule.timesApplied || 0) + 1;
+                        applied.push({ rule: rule, val: m[1].trim() });
+                    }
+                }
+            }
+
+            if (applied.length > 0) {
+                this.saveLearnedRules();
+                if (!offer.points_appris) offer.points_appris = [];
+                applied.forEach(a => {
+                    offer.points_appris.push({
+                        field: a.rule.fieldKey,
+                        label: a.rule.fieldLabel,
+                        val: a.val,
+                        trigger: a.rule.triggerKeyword,
+                        time: new Date().toLocaleTimeString('fr-FR')
+                    });
+                });
+            }
+
+            return applied;
+        },
+
+        generateSampleDocumentText(offer) {
+            if (!offer) return '';
+            return `DOCUMENT DE VOYAGE : ${offer.titre}\n` +
+                   `RÉFÉRENCE DOSSIER : ${offer.source_reference || 'Devis agence'}\n` +
+                   `ORGANISATEUR : ${offer.vendeur ? offer.vendeur.nom : 'Agence de voyages'}\n\n` +
+                   `DATES DU SÉJOUR : ${offer.date_depart ? 'Du ' + offer.date_depart + ' au ' + offer.date_retour : 'Départ 2026'}\n` +
+                   `DURÉE : ${offer.duree_jours} jours / ${offer.duree_nuits} nuits (${offer.prix ? offer.prix.nombre_personnes : 2} personnes)\n\n` +
+                   `TRANSPORT :\n` +
+                   `- Type de transport : ${offer.transport ? offer.transport.type_transport : 'Vol'}\n` +
+                   `- Compagnie aérienne : ${offer.transport ? offer.transport.compagnie_aerienne : 'Non précisée'}\n` +
+                   `- Détails vol : ${offer.transport ? offer.transport.details : ''}\n\n` +
+                   `CONDITIONS TARIFAIRES :\n` +
+                   (offer.transport && offer.transport.est_vol ?
+                    `- Prix net hors taxes par personne : ${offer.prix ? offer.prix.prix_ht_par_personne : 0} €\n` +
+                    `- Taxes aériennes obligatoires : ${offer.prix ? offer.prix.taxes_aeroport_par_personne : 0} € par personne\n` +
+                    `- Prix total TTC par personne : ${offer.prix ? offer.prix.prix_par_personne : 0} €\n` :
+                    `- Prix total TTC : ${offer.prix ? offer.prix.prix_total_annonce : 0} €\n`) +
+                   `- Frais de dossier : ${offer.prix ? offer.prix.frais_dossier : 0} €\n` +
+                   `- Taxe de séjour : ${offer.prix ? offer.prix.taxes_sejour_estimees : 0} €\n\n` +
+                   `HÉBERGEMENT & STANDING :\n` +
+                   `- Hôtels prévus : ${offer.hebergement ? offer.hebergement.nom : 'Hôtels selon programme'}\n` +
+                   `- Catégorie : ${offer.hebergement ? offer.hebergement.standing : 'Standard 3/4 étoiles'}\n` +
+                   `- Localisation : ${offer.hebergement ? offer.hebergement.adresse : 'Selon itinéraire'}\n\n` +
+                   `RESTAURATION :\n` +
+                   `- Formule de repas : ${offer.restauration ? offer.restauration.formule : 'Demi-pension'}\n` +
+                   `- Description : ${offer.restauration ? offer.restauration.description : ''}\n\n` +
+                   `VISITES & EXCURSIONS :\n` +
+                   `- Programme : ${offer.activites ? offer.activites.description : ''}\n` +
+                   `- Guide : ${offer.guide ? offer.guide.qualification : 'Non précisé'}\n\n` +
+                   `CONDITIONS DE VENTE & ANNULATION :\n` +
+                   `- Barème d'annulation : ${offer.annulation ? offer.annulation.conditions_detaillees : 'Frais standards'}\n` +
+                   `- Flexibilité : ${offer.annulation ? offer.annulation.flexibilite : 'Modérée'}\n`;
         }
     }));
 });

@@ -590,6 +590,7 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     # Construction de l'objet TravelOffer
     offer = TravelOffer(
         id=offer_id,
+        raw_text=raw_text,
         titre=titre,
         source_origine_type=source_type,
         source_reference=source_ref,
