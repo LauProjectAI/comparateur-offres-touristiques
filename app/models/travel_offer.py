@@ -133,6 +133,16 @@ class TravelOffer(BaseModel):
     source_origine_type: str = "manuel" # "url", "pdf", "docx", "xlsx", "manuel", "demo"
     source_reference: str = "" # URL ou nom de fichier
     
+    # Destination & Circuit
+    destination_pays: str = "" # ex: "Afrique du Sud"
+    destination_region: Optional[str] = "" # ex: "Mpumalanga / Cap"
+    circuit_nom: str = "" # ex: "De Johannesburg au Cap (13J/10N)"
+    
+    # Base de réalisation (tarification de groupe)
+    base_participants: int = 20 # 20 par défaut
+    base_disponibles: Dict[int, float] = Field(default_factory=dict) # {20: 2635.0, 30: 2485.0, 40: 2420.0}
+    base_details: str = "" # Libellé de la base extraite
+
     # Dates & Durée
     date_depart: Optional[str] = None
     date_retour: Optional[str] = None

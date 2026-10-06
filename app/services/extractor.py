@@ -113,6 +113,237 @@ def extract_text_from_url(url: str) -> Tuple[str, str]:
     except Exception as e:
         return "", f"Erreur lors de la récupération de la page : {str(e)}"
 
+DESTINATIONS_KNOWLEDGE_BASE = [
+    {
+        "pays": "Afrique du Sud",
+        "region": "Mpumalanga / Cap",
+        "circuit_default": "De Johannesburg au Cap",
+        "keywords": ["afrique du sud", "south africa", "johannesburg", "cape town", "le cap", "kruger", "pretoria", "soweto", "blyde", "eswatini", "swaziland", "hluhluwe", "durban", "robben island", "pilgrim's rest"],
+        "codes": ["za", "jnb", "cpt", "dur"]
+    },
+    {
+        "pays": "Espagne",
+        "region": "Andalousie",
+        "circuit_default": "Circuit des Joyaux Mauresques",
+        "keywords": ["andalousie", "séville", "seville", "cordoue", "grenade", "malaga", "ronda", "alhambra", "mezquita"],
+        "codes": ["es", "svq", "agp", "mad", "bcn"]
+    },
+    {
+        "pays": "Italie",
+        "region": "Latium / Rome",
+        "circuit_default": "Cœur Historique de Rome",
+        "keywords": ["rome", "roma", "vatican", "colisée", "colosseo", "trastevere", "italie", "italy", "florence", "venise"],
+        "codes": ["it", "fco", "cia", "vce"]
+    },
+    {
+        "pays": "Maroc",
+        "region": "Villes Impériales",
+        "circuit_default": "Circuit des Cités Impériales & Atlas",
+        "keywords": ["maroc", "morocco", "marrakech", "casablanca", "rabat", "fès", "fes", "meknès", "meknes", "ouarzazate", "essaouira"],
+        "codes": ["ma", "rak", "cmn"]
+    },
+    {
+        "pays": "Portugal",
+        "region": "Madère",
+        "circuit_default": "Madère l'Île aux Fleurs & Levadas",
+        "keywords": ["madère", "madere", "madeira", "funchal", "porto moniz", "santana", "pico do arieiro", "portugal", "lisbonne", "porto"],
+        "codes": ["pt", "fnc", "lis", "opo"]
+    },
+    {
+        "pays": "Costa Rica",
+        "region": "Parcs & Volcans",
+        "circuit_default": "Sanctuaires de la Biodiversité",
+        "keywords": ["costa rica", "san josé", "san jose", "arenal", "monteverde", "tortuguero", "manuel antonio"],
+        "codes": ["cr", "sjo"]
+    },
+    {
+        "pays": "Norvège",
+        "region": "Fjords de l'Ouest",
+        "circuit_default": "Route des Fjords & Cascades",
+        "keywords": ["norvège", "norvege", "norway", "oslo", "flåm", "flam", "bergen", "geiranger", "sognefjord"],
+        "codes": ["no", "osl", "bgo"]
+    },
+    {
+        "pays": "Japon",
+        "region": "Honshu",
+        "circuit_default": "Trésors Traditionnels & Tokyo",
+        "keywords": ["japon", "japan", "tokyo", "kyoto", "osaka", "nara", "hiroshima", "fuji"],
+        "codes": ["jp", "hnd", "nrt", "kix"]
+    },
+    {
+        "pays": "Thaïlande",
+        "region": "Siam & Nord",
+        "circuit_default": "Temples du Siam & Îles",
+        "keywords": ["thaïlande", "thailande", "thailand", "bangkok", "chiang mai", "phuket", "ayutthaya"],
+        "codes": ["th", "bkk", "hkt"]
+    },
+    {
+        "pays": "Canada",
+        "region": "Québec / Ontario",
+        "circuit_default": "Grands Espaces & Cités Royales",
+        "keywords": ["canada", "québec", "quebec", "montréal", "montreal", "toronto", "niagara"],
+        "codes": ["ca", "yul", "yyz"]
+    },
+    {
+        "pays": "Tanzanie",
+        "region": "Serengeti & Zanzibar",
+        "circuit_default": "Grande Migration & Rivages de Zanzibar",
+        "keywords": ["tanzanie", "tanzania", "serengeti", "ngorongoro", "zanzibar", "kilimandjaro"],
+        "codes": ["tz", "jro", "znz"]
+    }
+]
+
+def detect_destination(source_ref: str, raw_text: str, title: str) -> Tuple[str, str, str]:
+    """
+    Reconnaît en priorité absolue le pays et la région du voyage.
+    Ordre de priorité :
+    1. Nom du fichier (source_ref)
+    2. Titre du document et 5 premières lignes
+    3. Corps du texte
+    """
+    filename_clean = re.sub(r'[\._\-]+', ' ', source_ref.lower())
+    title_clean = title.lower() if title else ""
+    first_lines = " ".join([l.strip().lower() for l in raw_text.splitlines()[:8] if l.strip()])
+    
+    # Priorité 1 : Analyse du nom de fichier
+    for dest in DESTINATIONS_KNOWLEDGE_BASE:
+        if any(kw in filename_clean for kw in dest["keywords"]):
+            circuit = dest["circuit_default"]
+            m_route = re.search(r'de\s+([a-z\s]{3,20})\s+[àa]\s+([a-z\s]{3,20})', filename_clean)
+            if m_route:
+                circuit = f"De {m_route.group(1).strip().capitalize()} à {m_route.group(2).strip().capitalize()}"
+            return dest["pays"], dest["region"], circuit
+        for code in dest["codes"]:
+            if re.search(r'\b' + re.escape(code) + r'\b|\b' + re.escape(code) + r'\d+', filename_clean):
+                circuit = dest["circuit_default"]
+                m_route = re.search(r'de\s+([a-z\s]{3,20})\s+[àa]\s+([a-z\s]{3,20})', filename_clean)
+                if m_route:
+                    circuit = f"De {m_route.group(1).strip().capitalize()} à {m_route.group(2).strip().capitalize()}"
+                return dest["pays"], dest["region"], circuit
+
+    # Priorité 2 : Analyse du titre et des premières lignes
+    top_context = f"{title_clean} {first_lines}"
+    for dest in DESTINATIONS_KNOWLEDGE_BASE:
+        if any(kw in top_context for kw in dest["keywords"]):
+            circuit = dest["circuit_default"]
+            m_circ = re.search(r'circuit\s+(?:de\s+)?([^\n\r\|\.]{4,60}?)(?:au\s+départ|\d+j|\n|$)', top_context)
+            if m_circ:
+                circuit = m_circ.group(1).strip().title()
+            return dest["pays"], dest["region"], circuit
+
+    # Priorité 3 : Analyse globale du texte
+    lower_full = raw_text.lower()
+    best_match = None
+    best_score = 0
+    for dest in DESTINATIONS_KNOWLEDGE_BASE:
+        score = sum(lower_full.count(kw) for kw in dest["keywords"])
+        if score > best_score and score >= 2:
+            best_score = score
+            best_match = dest
+
+    if best_match:
+        return best_match["pays"], best_match["region"], best_match["circuit_default"]
+
+    return "Destination Internationale", "Circuit Découverte", "Circuit Découverte"
+
+def extract_base_pricing(raw_text: str, text_clean: str, raw_lines: list) -> Dict[str, Any]:
+    """
+    Extrait précisément le tarif par personne selon les tranches de groupe ("Base 20", 30, 40),
+    ainsi que les suppléments de base et la ventilation des taxes d'aéroport.
+    """
+    supplements = {}
+    for line in raw_lines:
+        m_supp = re.search(r'suppl[eé]ment\s+base\s+(\d+)(?:[/\-]\d+)?\s*(?:participants?|personnes?|pax)?\s*:\s*\+\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)', line, re.IGNORECASE)
+        if m_supp:
+            b_num = int(m_supp.group(1))
+            val = float(m_supp.group(2).replace(' ', '').replace(',', '.'))
+            supplements[b_num] = val
+
+    base_prices = {}
+    table_rows = [line.split('|') for line in raw_lines if '|' in line]
+    for r_idx, row in enumerate(table_rows):
+        row_str = " | ".join(row).lower()
+        m_base_row = re.search(r'base\s+(\d+)\s*(?:participants?|personnes?|pax)?', row_str)
+        if m_base_row:
+            b_num = int(m_base_row.group(1))
+            for cell in row:
+                m_p = re.search(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR)', cell)
+                if m_p:
+                    v = float(m_p.group(1).replace(' ', '').replace(',', '.'))
+                    if 400 <= v <= 35000:
+                        base_prices[b_num] = v
+                        break
+            if b_num not in base_prices and r_idx + 1 < len(table_rows):
+                for cell in table_rows[r_idx + 1]:
+                    m_p = re.search(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR)', cell)
+                    if m_p:
+                        v = float(m_p.group(1).replace(' ', '').replace(',', '.'))
+                        if 400 <= v <= 35000:
+                            base_prices[b_num] = v
+                            break
+
+    for line in raw_lines:
+        m_direct = re.search(r'base\s*(?:de\s+réalisation\s*[:\-]?)?\s*(?:de\s+)?(\d+)(?:[/\-]\d+)?\s*(?:participants?|personnes?|pax)?[\s\S]{0,100}?(?:prix|tarif)[\s\S]{0,50}?(\d+[\s\.,]?\d*)\s*(?:€|EUR)', line, re.IGNORECASE)
+        if m_direct:
+            b_num = int(m_direct.group(1))
+            val = float(m_direct.group(2).replace(' ', '').replace(',', '.'))
+            if 400 <= val <= 35000:
+                base_prices[b_num] = val
+
+    for i, line in enumerate(raw_lines):
+        m_b = re.search(r'base\s*(?:de\s+réalisation\s*[:\-]?)?\s*(?:de\s+)?(\d+)(?:[/\-]\d+)?', line, re.IGNORECASE)
+        if m_b:
+            b_num = int(m_b.group(1))
+            for next_line in raw_lines[i:i+6]:
+                if any(k in next_line.lower() for k in ["prix", "tarif"]) and not any(k in next_line.lower() for k in ["supplément", "single", "individuelle"]):
+                    m_p = re.search(r'(\d+[\s\.,]?\d*)\s*(?:€|EUR)', next_line)
+                    if m_p:
+                        v = float(m_p.group(1).replace(' ', '').replace(',', '.'))
+                        if 400 <= v <= 35000 and b_num not in base_prices:
+                            base_prices[b_num] = v
+                            break
+
+    if 20 not in base_prices:
+        if 40 in base_prices and 20 in supplements:
+            base_prices[20] = round(base_prices[40] + supplements[20], 2)
+        elif 30 in base_prices and 20 in supplements and 30 in supplements:
+            base_prices[20] = round(base_prices[30] - supplements[30] + supplements[20], 2)
+        elif 40 in base_prices:
+            base_prices[20] = base_prices[40]
+
+    if 30 not in base_prices:
+        if 40 in base_prices and 30 in supplements:
+            base_prices[30] = round(base_prices[40] + supplements[30], 2)
+        elif 20 in base_prices and 20 in supplements and 30 in supplements:
+            base_prices[30] = round(base_prices[20] - supplements[20] + supplements[30], 2)
+
+    taxes_aero_pers = 0.0
+    for line in raw_lines:
+        if "taxes" in line.lower() and any(k in line.lower() for k in ["aéroport", "aeroport", "aérienne", "aerienne"]):
+            m_tax = re.search(r'(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)', line)
+            if m_tax:
+                t_val = float(m_tax.group(1).replace(' ', '').replace(',', '.'))
+                if 20 <= t_val <= 1500:
+                    taxes_aero_pers = t_val
+                    break
+
+    base_retenue = 20
+    if 20 in base_prices:
+        prix_par_pers = base_prices[20]
+    elif base_prices:
+        base_retenue = sorted(base_prices.keys())[0]
+        prix_par_pers = base_prices[base_retenue]
+    else:
+        prix_par_pers = 0.0
+
+    return {
+        "base_retenue": base_retenue,
+        "prix_par_personne": prix_par_pers,
+        "base_disponibles": base_prices,
+        "supplements": supplements,
+        "taxes_aeroport_pers": taxes_aero_pers
+    }
+
 def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref: str) -> TravelOffer:
     """
     Analyse sémantique et structuration des informations issues du texte brut.
@@ -120,10 +351,14 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     Associe chaque donnée extraite à sa source.
     """
     text_clean = re.sub(r'\s+', ' ', raw_text)
+    raw_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
     
     # 1. Titre
     lines = [l.strip() for l in raw_text.splitlines() if len(l.strip()) > 3]
     titre = lines[0][:80] if lines else f"Offre {offer_id}"
+
+    # 1.bis. Reconnaissance prioritaire du Pays, de la Région et du Circuit
+    dest_pays, dest_region, circuit_nom = detect_destination(source_ref, raw_text, titre)
     
     # 2. Vendeur
     vendeur_nom = "Organisateur non identifié"
@@ -145,10 +380,20 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         source=SourceOrigin.NON_VERIFIE
     )
 
-    # 3. Prix et devises
+    # 3. Extraction avancée du Prix par Personne selon "Base 20" (ou 30, 40)
+    group_pricing = extract_base_pricing(raw_text, text_clean, raw_lines)
+    base_participants = group_pricing["base_retenue"]
+    base_disponibles = group_pricing["base_disponibles"]
+    base_details = f"Base {base_participants} personnes"
+    if 20 in base_disponibles and base_participants == 20:
+        base_details = "Base 20 participants"
+
     prix_total = 0.0
     is_price_per_person = False
-    raw_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+
+    if group_pricing["prix_par_personne"] > 0:
+        prix_total = group_pricing["prix_par_personne"]
+        is_price_per_person = True
 
     # Stratégie 1 : Tableaux structurés (lignes contenant des séparateurs |)
     # Permet de détecter les devis où l'en-tête (ex: 'Prix par personne en double') est sur une ligne
@@ -330,24 +575,27 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
     )
 
     # Détection des taxes d'aéroport pour voyage aérien
-    taxes_aero_pers = 0.0
+    taxes_aero_pers = group_pricing.get("taxes_aeroport_pers", 0.0)
     taxes_aero_statut = "non_applicable"
     
     if est_vol:
-        regex_taxes_aero = [
-            r'taxes\s+(?:d[\'’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
-            r'taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
-            r'dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d[\'’]\s*)?a[eé]ro',
-            r'redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)'
-        ]
-        for r_tax in regex_taxes_aero:
-            m_tax = re.search(r_tax, raw_text, re.IGNORECASE)
-            if m_tax:
-                val_tax = float(m_tax.group(1).replace(' ', '').replace(',', '.'))
-                if 15 <= val_tax <= 1500:
-                    taxes_aero_pers = val_tax
-                    taxes_aero_statut = "en_supplement"
-                    break
+        if taxes_aero_pers > 0.0:
+            taxes_aero_statut = "en_supplement"
+        else:
+            regex_taxes_aero = [
+                r'taxes\s+(?:d[\'’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
+                r'taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)',
+                r'dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d[\'’]\s*)?a[eé]ro',
+                r'redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)'
+            ]
+            for r_tax in regex_taxes_aero:
+                m_tax = re.search(r_tax, raw_text, re.IGNORECASE)
+                if m_tax:
+                    val_tax = float(m_tax.group(1).replace(' ', '').replace(',', '.'))
+                    if 15 <= val_tax <= 1500:
+                        taxes_aero_pers = val_tax
+                        taxes_aero_statut = "en_supplement"
+                        break
         
         if taxes_aero_pers == 0.0:
             if re.search(r'taxes\s+(?:d[\'’]\s*|d\s+)?a[eé]roport|taxes\s+a[eé]riennes', raw_text, re.IGNORECASE):
@@ -594,6 +842,12 @@ def parse_offer_text(raw_text: str, offer_id: str, source_type: str, source_ref:
         titre=titre,
         source_origine_type=source_type,
         source_reference=source_ref,
+        destination_pays=dest_pays,
+        destination_region=dest_region,
+        circuit_nom=circuit_nom,
+        base_participants=base_participants,
+        base_disponibles=base_disponibles,
+        base_details=base_details,
         date_depart=date_dep,
         date_retour=date_ret,
         duree_jours=duree_jours,

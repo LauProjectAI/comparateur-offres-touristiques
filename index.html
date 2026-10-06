@@ -301,7 +301,7 @@
                             </div>
 
                             <!-- Informations Générales & Traçabilité -->
-                            <div class="bento-cell p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-slate-800">
+                            <div class="bento-cell p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-slate-800">
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Titre de l'offre</label>
                                     <input type="text" x-model="currentOffer.titre" class="w-full text-xs font-bold bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:ring-1 focus:ring-cyan-500">
@@ -309,9 +309,38 @@
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Source / Traçabilité</label>
                                     <div class="text-xs bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
-                                        <span class="text-slate-600 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
-                                        <span class="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
+                                        <span class="text-slate-400 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
+                                        <span class="text-[10px] bg-sky-950 text-sky-300 border border-sky-800/50 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Reconnaissance prioritaire Pays, Région, Circuit & Base Participants -->
+                            <div class="bento-cell p-4 mb-5 grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/80 border border-slate-800">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">🌍 Pays identifié</label>
+                                    <input type="text" x-model="currentOffer.destination_pays" class="w-full text-xs font-extrabold bg-slate-900 border border-cyan-500/40 text-cyan-300 rounded-lg p-2 focus:ring-1 focus:ring-cyan-400" placeholder="ex: Afrique du Sud">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">📍 Région / Zone</label>
+                                    <input type="text" x-model="currentOffer.destination_region" class="w-full text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2" placeholder="ex: Mpumalanga / Cap">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">🗺️ Tracé Circuit précis</label>
+                                    <input type="text" x-model="currentOffer.circuit_nom" class="w-full text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2" placeholder="ex: De Johannesburg au Cap">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">👥 Base tarification groupe</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <template x-for="b in [20, 30, 40]" :key="b">
+                                            <button type="button" @click="currentOffer.base_participants = b; setComparisonBase(b)" 
+                                                    :class="currentOffer.base_participants === b ? 'bg-cyan-600 text-white font-extrabold shadow-sm' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+                                                    class="flex-1 py-1.5 rounded-lg text-xs transition">
+                                                Base <span x-text="b"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500 block mt-1" x-text="currentOffer.base_details || `Base ${currentOffer.base_participants} personnes`"></span>
                                 </div>
                             </div>
 
@@ -763,13 +792,28 @@
         <!-- ======================================================== -->
         <section x-show="step === 3 && comparisonResult" class="transition-smooth">
             
-            <!-- Barre d'actions du rapport -->
+            <!-- Barre d'actions du rapport avec sélecteur de Base Groupe -->
             <div class="mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
-                <button @click="step = 2" class="bento-cell px-4 py-2 text-slate-300 hover:text-white border-slate-700 text-xs font-bold transition shadow-sm">
-                    ← Modifier ou corriger les offres
-                </button>
+                <div class="flex items-center gap-3">
+                    <button @click="step = 2" class="bento-cell px-4 py-2 text-slate-300 hover:text-white border-slate-700 text-xs font-bold transition shadow-sm">
+                        ← Modifier ou corriger les offres
+                    </button>
+                    <!-- Sélecteur rapide de Base Groupe pour le comparatif -->
+                    <div class="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-1 gap-1">
+                        <span class="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1">
+                            <span>👥</span> Base tarifaire :
+                        </span>
+                        <template x-for="b in [20, 30, 40]" :key="b">
+                            <button type="button" @click="setComparisonBase(b)"
+                                    :class="globalBaseComparison === b ? 'bg-cyan-600 text-white font-extrabold shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-900'"
+                                    class="px-2.5 py-1 text-xs rounded-lg transition">
+                                Base <span x-text="b"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-xs text-slate-500 font-medium">Voyage : <strong class="uppercase text-slate-900" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
+                    <span class="text-xs text-slate-400 font-medium">Voyage : <strong class="uppercase text-cyan-300" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
                     <button @click="printReport()" class="bento-cell px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                         <span>🖨️ Imprimer / Export PDF</span>
                     </button>
@@ -966,9 +1010,12 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <span class="text-lg">🗺️</span>
-                            <h3 class="text-base font-bold text-slate-900" x-text="itineraryData ? itineraryData.title : 'Carte des Circuits'"></h3>
+                            <h3 class="text-base font-bold text-white">
+                                <span class="text-cyan-400" x-text="offers[0]?.destination_pays ? `${offers[0].destination_pays} : ` : ''"></span>
+                                <span x-text="offers[0]?.circuit_nom || (itineraryData ? itineraryData.title : 'Carte des Circuits')"></span>
+                            </h3>
                         </div>
-                        <p class="text-xs text-slate-500 mt-0.5">Visualisation géographique comparative des étapes, des tracés routiers, des vols intérieurs et des hébergements.</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Visualisation géographique comparative des étapes, des tracés routiers, des vols intérieurs et des hébergements.</p>
                     </div>
 
                     <!-- Sélecteur de filtres circuits -->

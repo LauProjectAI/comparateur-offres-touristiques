@@ -243,45 +243,201 @@ const ITINERARIES_DATABASE = {
         ]
     },
 
-    // 3. Rome
-    rome: {
-        id: "rome",
-        title: "Rome : Cœur Historique vs Périphérie",
-        center: [41.895, 12.45],
-        zoom: 12,
+    // 4. Maroc (Villes Impériales & Désert)
+    maroc: {
+        id: "maroc",
+        title: "Maroc : Villes Impériales & Grand Sud",
+        center: [31.7917, -7.0926],
+        zoom: 6,
         flightPath: null,
         steps: [
             {
-                id: "centre_quirinale",
-                name: "Rome Antique & Fontaine de Trevi",
+                id: "marrakech",
+                name: "Marrakech (Médina & Majorelle)",
                 day: "J1-J2",
-                coords: [41.9009, 12.4890],
-                offer0: { title: "Rome Prestige", desc: "Hôtel Quirinale Roma 4* à 10 min à pied de la Fontaine de Trevi.", hotel: "Hôtel Quirinale Roma 4*" },
-                offer1: { title: "Rome Éco", desc: "Hébergement excentré nécessitant 45 min de transport quotidien.", hotel: "Hôtel Roma Aurelia Park 3* (Périphérie)" }
+                coords: [31.6295, -7.9811],
+                offer0: { title: "Circuit Impérial", desc: "Place Jemaa el-Fna, Palais Bahia et Jardins Majorelle.", hotel: "Riad ou Hôtel 4* Marrakech" },
+                offer1: { title: "Circuit Découverte", desc: "Visite panoramique de Marrakech.", hotel: "Hôtel 3/4* Marrakech" }
             },
             {
-                id: "vatican",
-                name: "Vatican & Chapelle Sixtine",
-                day: "J2",
-                coords: [41.9029, 12.4534],
-                offer0: { title: "Rome Prestige", desc: "Coupe-file et guide conférencier officiel inclus pour les musées du Vatican.", hotel: "Hôtel Quirinale 4*" },
-                offer1: { title: "Rome Éco", desc: "Accès libre sans billet ni guide inclus (réservation individuelle à prévoir).", hotel: "Hôtel Aurelia Park" }
+                id: "ait_ben_haddou",
+                name: "Ksar Aït-ben-Haddou & Ouarzazate",
+                day: "J3-J4",
+                coords: [31.0469, -7.1295],
+                offer0: { title: "Circuit Impérial", desc: "Franchissement du col du Tichka et visite du Ksar classé UNESCO.", hotel: "Hôtel Berbère 4*" },
+                offer1: { title: "Circuit Découverte", desc: "Arrêt photo Aït-ben-Haddou et studios de cinéma.", hotel: "Hôtel Ouarzazate" }
             },
             {
-                id: "colisee",
-                name: "Colisée & Forum Romain",
-                day: "J3",
-                coords: [41.8902, 12.4922],
-                offer0: { title: "Rome Prestige", desc: "Pass coupe-file prioritaire et visite archéologique du Forum Romain.", hotel: "Hôtel Quirinale 4*" },
-                offer1: { title: "Rome Éco", desc: "Extérieur du Colisée en autonomie.", hotel: "Hôtel Aurelia Park" }
+                id: "dromadaire_merzouga",
+                name: "Dunes de Merzouga (Sahara)",
+                day: "J5-J6",
+                coords: [31.0991, -4.0117],
+                offer0: { title: "Circuit Impérial", desc: "Bivouac de charme dans les dunes de l'Erg Chebbi et coucher de soleil.", hotel: "Campement Deluxe" },
+                offer1: { title: "Circuit Découverte", desc: "Excursion vers les dunes et nuit en auberge.", hotel: "Auberge Merzouga" }
             },
             {
-                id: "trastevere",
-                name: "Quartier Bohème du Trastevere",
-                day: "J4",
-                coords: [41.8887, 12.4697],
-                offer0: { title: "Rome Prestige", desc: "Balade guidée nocturne et dîner trattoria typique.", hotel: "Hôtel Quirinale 4*" },
-                offer1: { title: "Rome Éco", desc: "Soirée libre.", hotel: "Hôtel Aurelia Park" }
+                id: "fes",
+                name: "Fès (Capitale Spirituelle)",
+                day: "J7-J8",
+                coords: [34.0181, -5.0078],
+                offer0: { title: "Circuit Impérial", desc: "Médina Fès el-Bali, tanneries Chouara et Medersa Attarine.", hotel: "Hôtel 4* Fès" },
+                offer1: { title: "Circuit Découverte", desc: "Tour des remparts et visite guidée des souks.", hotel: "Hôtel 3* Fès" }
+            }
+        ]
+    },
+
+    // 5. Madère (L'Île aux Fleurs & Randonnées Levadas)
+    madere: {
+        id: "madere",
+        title: "Madère : L'Île Émeraude & Falaises de l'Atlantique",
+        center: [32.7607, -16.9595],
+        zoom: 10,
+        flightPath: null,
+        steps: [
+            {
+                id: "funchal",
+                name: "Funchal (Marché des Laboureurs & Monte)",
+                day: "J1-J2",
+                coords: [32.6500, -16.9089],
+                offer0: { title: "Madère Émeraude", desc: "Jardin botanique, descente en traîneaux d'osier de Monte et marché.", hotel: "Hôtel 4* Funchal" },
+                offer1: { title: "Madère Nature", desc: "Installation à Funchal et temps libre dans la vieille ville.", hotel: "Hôtel 3* Funchal" }
+            },
+            {
+                id: "porto_moniz",
+                name: "Porto Moniz & Piscines Naturelles",
+                day: "J3-J4",
+                coords: [32.8672, -17.1697],
+                offer0: { title: "Madère Émeraude", desc: "Piscines de lave volcanique de Porto Moniz et plateau de Paul da Serra.", hotel: "Hôtel Côtier 4*" },
+                offer1: { title: "Madère Nature", desc: "Baignade dans les piscines naturelles et panorama nord.", hotel: "Hôtel Nord" }
+            },
+            {
+                id: "santana",
+                name: "Santana & Levada do Caldeirão Verde",
+                day: "J5-J6",
+                coords: [32.8055, -16.8822],
+                offer0: { title: "Madère Émeraude", desc: "Maisons typiques aux toits de chaume de Santana et rando levada.", hotel: "Pousada ou Hôtel 4*" },
+                offer1: { title: "Madère Nature", desc: "Arrêt aux maisons traditionnelles de Santana.", hotel: "Hôtel Est" }
+            },
+            {
+                id: "cabo_girao",
+                name: "Cabo Girão (Plateforme de Verre)",
+                day: "J7-J8",
+                coords: [32.6506, -17.0050],
+                offer0: { title: "Madère Émeraude", desc: "Vue vertigineuse depuis la 2e plus haute falaise d'Europe (580 m).", hotel: "Hôtel 4* Funchal" },
+                offer1: { title: "Madère Nature", desc: "Passage au belvédère de Cabo Girão avant départ.", hotel: "Hôtel Funchal" }
+            }
+        ]
+    },
+
+    // 6. Norvège (Fjords de l'Ouest)
+    norvege: {
+        id: "norvege",
+        title: "Norvège : Route Féérique des Fjords",
+        center: [61.0, 7.0],
+        zoom: 6,
+        flightPath: null,
+        steps: [
+            {
+                id: "oslo",
+                name: "Oslo (Capitale & Parc Vigeland)",
+                day: "J1-J2",
+                coords: [59.9139, 10.7522],
+                offer0: { title: "Fjords Panorama", desc: "Opéra d'Oslo, musée du Fram et sculptures de Vigeland.", hotel: "Clarion Hotel Oslo 4*" },
+                offer1: { title: "Fjords Essentiel", desc: "Tour panoramique d'Oslo.", hotel: "Hôtel Oslo Périphérie" }
+            },
+            {
+                id: "flam",
+                name: "Flåm & Nærøyfjord (UNESCO)",
+                day: "J3-J4",
+                coords: [60.8608, 7.1133],
+                offer0: { title: "Fjords Panorama", desc: "Train panoramique Flåmsbana et croisière sur le Nærøyfjord.", hotel: "Fretheim Hotel Flåm" },
+                offer1: { title: "Fjords Essentiel", desc: "Traversée du fjord en ferry régulier.", hotel: "Hôtel Fjord" }
+            },
+            {
+                id: "bergen",
+                name: "Bergen (Quartier Hanséatique de Bryggen)",
+                day: "J5-J6",
+                coords: [60.3913, 5.3221],
+                offer0: { title: "Fjords Panorama", desc: "Maisons de bois de Bryggen, marché aux poissons et funiculaire Fløibanen.", hotel: "Thon Hotel Rosenkrantz Bergen" },
+                offer1: { title: "Fjords Essentiel", desc: "Découverte de Bryggen en autonomie.", hotel: "Hôtel 3* Bergen" }
+            }
+        ]
+    },
+
+    // 7. Japon (Honshu : Tokyo, Kyoto, Osaka)
+    japon: {
+        id: "japon",
+        title: "Japon : Cités Millénaires & Mégalopoles du Futur",
+        center: [35.2, 137.0],
+        zoom: 6,
+        flightPath: null,
+        steps: [
+            {
+                id: "tokyo",
+                name: "Tokyo (Shibuya, Asakusa & Shinjuku)",
+                day: "J1-J4",
+                coords: [35.6762, 139.6503],
+                offer0: { title: "Trésors du Japon", desc: "Temple Senso-ji, carrefour de Shibuya, quartier électrique Akihabara.", hotel: "Hôtel 4* Shinjuku" },
+                offer1: { title: "Japon Découverte", desc: "Visite guidée d'Asakusa et journée libre.", hotel: "Hôtel 3* Tokyo" }
+            },
+            {
+                id: "kyoto",
+                name: "Kyoto (Kinkaku-ji & Fushimi Inari)",
+                day: "J5-J8",
+                coords: [35.0116, 135.7681],
+                offer0: { title: "Trésors du Japon", desc: "Pavillon d'Or Kinkaku-ji, forêt de bambous d'Arashiyama, sanctuaire aux 10 000 torii Fushimi Inari.", hotel: "Kyoto Century Hotel 4*" },
+                offer1: { title: "Japon Découverte", desc: "Balade à Gion et visite du Pavillon d'Or.", hotel: "Hôtel 3* Kyoto" }
+            },
+            {
+                id: "nara_osaka",
+                name: "Nara & Osaka (Dotonbori)",
+                day: "J9-J11",
+                coords: [34.6937, 135.5023],
+                offer0: { title: "Trésors du Japon", desc: "Cerfs sacrés de Nara, Grand Bouddha Todai-ji et street food à Osaka.", hotel: "Cross Hotel Osaka 4*" },
+                offer1: { title: "Japon Découverte", desc: "Excursion à Nara et temps libre à Dotonbori.", hotel: "Hôtel Osaka" }
+            }
+        ]
+    },
+
+    // 8. Costa Rica (Biodiversité & Volcans)
+    costa_rica: {
+        id: "costa_rica",
+        title: "Costa Rica : Volcans & Sanctuaires Sauvages",
+        center: [10.0, -84.2],
+        zoom: 7,
+        flightPath: null,
+        steps: [
+            {
+                id: "san_jose",
+                name: "San José (Vallée Centrale)",
+                day: "J1-J2",
+                coords: [9.9281, -84.0907],
+                offer0: { title: "Costa Rica Puravida", desc: "Accueil à San José et briefing expédition nature.", hotel: "Hôtel Grano de Oro" },
+                offer1: { title: "Costa Rica Éco", desc: "Nuitée San José.", hotel: "Hôtel 3* San José" }
+            },
+            {
+                id: "tortuguero",
+                name: "Tortuguero (Amazonie des Caraïbes)",
+                day: "J3-J4",
+                coords: [10.5419, -83.5186],
+                offer0: { title: "Costa Rica Puravida", desc: "Navigation en bateau dans les canaux, observation des paresseux, toucans et caïmans.", hotel: "Pachira Lodge" },
+                offer1: { title: "Costa Rica Éco", desc: "Excursion canaux en barque motorisée.", hotel: "Tortuguero Eco-Lodge" }
+            },
+            {
+                id: "arenal",
+                name: "Volcan Arenal & Sources Chaudes",
+                day: "J5-J7",
+                coords: [10.4631, -84.7032],
+                offer0: { title: "Costa Rica Puravida", desc: "Randonnée sur les coulées de lave, ponts suspendus dans la canopée et thermes naturels Tabacón.", hotel: "Arenal Springs Resort" },
+                offer1: { title: "Costa Rica Éco", desc: "Vue sur le volcan Arenal et entrée thermes éco.", hotel: "Hôtel La Fortuna" }
+            },
+            {
+                id: "manuel_antonio",
+                name: "Parc National Manuel Antonio (Pacifique)",
+                day: "J8-J10",
+                coords: [9.3925, -84.1378],
+                offer0: { title: "Costa Rica Puravida", desc: "Plages immaculées du Pacifique, singes capucins et baignade.", hotel: "Parador Nature Resort" },
+                offer1: { title: "Costa Rica Éco", desc: "Journée libre au parc de Manuel Antonio.", hotel: "Hôtel 3* Manuel Antonio" }
             }
         ]
     }
@@ -289,10 +445,55 @@ const ITINERARIES_DATABASE = {
 
 /**
  * Détecte intelligemment l'itinéraire pertinent à partir des offres analysées
+ * Priorité 1 : Champ structuré destination_pays / destination_region
+ * Priorité 2 : Analyse du titre et du nom de fichier
+ * Priorité 3 : Corpus textuel global
  */
 function detectMatchingItinerary(offers) {
     if (!offers || offers.length === 0) return ITINERARIES_DATABASE.south_africa;
 
+    // Priorité 1 : Vérification des métadonnées explicites de destination sur chaque offre
+    for (const off of offers) {
+        const p = (off.destination_pays || '').toLowerCase();
+        const r = (off.destination_region || '').toLowerCase();
+        if (p.includes('afrique du sud') || r.includes('cap') || r.includes('mpumalanga')) return ITINERARIES_DATABASE.south_africa;
+        if (p.includes('maroc')) return ITINERARIES_DATABASE.maroc;
+        if (p.includes('portugal') || p.includes('madère') || p.includes('madere')) return ITINERARIES_DATABASE.madere;
+        if (p.includes('espagne') || p.includes('andalousie')) return ITINERARIES_DATABASE.andalousie;
+        if (p.includes('italie') || p.includes('rome')) return ITINERARIES_DATABASE.rome;
+        if (p.includes('norvège') || p.includes('norvege')) return ITINERARIES_DATABASE.norvege;
+        if (p.includes('japon')) return ITINERARIES_DATABASE.japon;
+        if (p.includes('costa rica')) return ITINERARIES_DATABASE.costa_rica;
+    }
+
+    // Priorité 2 : Analyse combinée des titres et références de fichiers
+    const titlesAndRefs = offers.map(o => `${o.titre || ''} ${o.source_reference || ''} ${o.circuit_nom || ''}`).join(' ').toLowerCase();
+    if (titlesAndRefs.includes('afrique du sud') || titlesAndRefs.includes('za25') || titlesAndRefs.includes('jnb') || titlesAndRefs.includes('cpt') || titlesAndRefs.includes('kruger')) {
+        return ITINERARIES_DATABASE.south_africa;
+    }
+    if (titlesAndRefs.includes('maroc') || titlesAndRefs.includes('marrakech') || titlesAndRefs.includes('fès') || titlesAndRefs.includes('fes')) {
+        return ITINERARIES_DATABASE.maroc;
+    }
+    if (titlesAndRefs.includes('madère') || titlesAndRefs.includes('madere') || titlesAndRefs.includes('funchal')) {
+        return ITINERARIES_DATABASE.madere;
+    }
+    if (titlesAndRefs.includes('andalousie') || titlesAndRefs.includes('séville') || titlesAndRefs.includes('seville') || titlesAndRefs.includes('grenade')) {
+        return ITINERARIES_DATABASE.andalousie;
+    }
+    if (titlesAndRefs.includes('rome') || titlesAndRefs.includes('roma') || titlesAndRefs.includes('vatican')) {
+        return ITINERARIES_DATABASE.rome;
+    }
+    if (titlesAndRefs.includes('norvège') || titlesAndRefs.includes('norvege') || titlesAndRefs.includes('oslo') || titlesAndRefs.includes('bergen')) {
+        return ITINERARIES_DATABASE.norvege;
+    }
+    if (titlesAndRefs.includes('japon') || titlesAndRefs.includes('tokyo') || titlesAndRefs.includes('kyoto')) {
+        return ITINERARIES_DATABASE.japon;
+    }
+    if (titlesAndRefs.includes('costa rica') || titlesAndRefs.includes('arenal')) {
+        return ITINERARIES_DATABASE.costa_rica;
+    }
+
+    // Priorité 3 : Corpus textuel global étendu
     const fullCorpus = offers.map(o => {
         return [
             o.titre,
@@ -304,42 +505,29 @@ function detectMatchingItinerary(offers) {
         ].join(' ');
     }).join(' ').toLowerCase();
 
-    // 1. Afrique du Sud
-    if (
-        fullCorpus.includes('afrique du sud') ||
-        fullCorpus.includes('kruger') ||
-        fullCorpus.includes('cape town') ||
-        fullCorpus.includes('le cap') ||
-        fullCorpus.includes('johannesburg') ||
-        fullCorpus.includes('pretoria') ||
-        fullCorpus.includes('blyde') ||
-        fullCorpus.includes('eswatini') ||
-        fullCorpus.includes('swaziland') ||
-        fullCorpus.includes('hluhluwe')
-    ) {
+    if (fullCorpus.includes('afrique du sud') || fullCorpus.includes('kruger') || fullCorpus.includes('cape town') || fullCorpus.includes('le cap') || fullCorpus.includes('johannesburg') || fullCorpus.includes('pretoria') || fullCorpus.includes('blyde') || fullCorpus.includes('eswatini') || fullCorpus.includes('swaziland') || fullCorpus.includes('hluhluwe')) {
         return ITINERARIES_DATABASE.south_africa;
     }
-
-    // 2. Andalousie
-    if (
-        fullCorpus.includes('andalousie') ||
-        fullCorpus.includes('séville') ||
-        fullCorpus.includes('seville') ||
-        fullCorpus.includes('grenade') ||
-        fullCorpus.includes('cordoue') ||
-        fullCorpus.includes('malaga')
-    ) {
+    if (fullCorpus.includes('maroc') || fullCorpus.includes('marrakech') || fullCorpus.includes('ouarzazate') || fullCorpus.includes('merzouga')) {
+        return ITINERARIES_DATABASE.maroc;
+    }
+    if (fullCorpus.includes('madère') || fullCorpus.includes('madere') || fullCorpus.includes('funchal') || fullCorpus.includes('porto moniz')) {
+        return ITINERARIES_DATABASE.madere;
+    }
+    if (fullCorpus.includes('andalousie') || fullCorpus.includes('séville') || fullCorpus.includes('seville') || fullCorpus.includes('grenade') || fullCorpus.includes('cordoue') || fullCorpus.includes('malaga')) {
         return ITINERARIES_DATABASE.andalousie;
     }
-
-    // 3. Rome
-    if (
-        fullCorpus.includes('rome') ||
-        fullCorpus.includes('roma') ||
-        fullCorpus.includes('vatican') ||
-        fullCorpus.includes('colisée')
-    ) {
+    if (fullCorpus.includes('rome') || fullCorpus.includes('roma') || fullCorpus.includes('vatican') || fullCorpus.includes('colisée')) {
         return ITINERARIES_DATABASE.rome;
+    }
+    if (fullCorpus.includes('norvège') || fullCorpus.includes('norvege') || fullCorpus.includes('oslo') || fullCorpus.includes('bergen') || fullCorpus.includes('flåm')) {
+        return ITINERARIES_DATABASE.norvege;
+    }
+    if (fullCorpus.includes('japon') || fullCorpus.includes('tokyo') || fullCorpus.includes('kyoto') || fullCorpus.includes('osaka')) {
+        return ITINERARIES_DATABASE.japon;
+    }
+    if (fullCorpus.includes('costa rica') || fullCorpus.includes('arenal') || fullCorpus.includes('tortuguero')) {
+        return ITINERARIES_DATABASE.costa_rica;
     }
 
     // Par défaut

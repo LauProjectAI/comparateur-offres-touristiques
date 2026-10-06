@@ -25,6 +25,9 @@ document.addEventListener('alpine:init', () => {
         mapFeatureGroup: null,
         mapFilter: 'all', // 'all', 'offer0', 'offer1'
         selectedStepId: null,
+
+        // Base de comparaison pour les voyages de groupe (ex: CSE, B2B)
+        globalBaseComparison: 20, // 20 par défaut (ou 30, 40)
         
         // Système d'apprentissage actif & mémorisation des règles d'extraction
         learnedRules: [],
@@ -406,6 +409,209 @@ document.addEventListener('alpine:init', () => {
             return fullText;
         },
 
+        // Base de connaissances géographique pour identification prioritaire du Pays, Région et Circuit
+        destinationsKB: [
+            {
+                pays: "Afrique du Sud",
+                region: "Mpumalanga / Cap",
+                circuit_default: "De Johannesburg au Cap",
+                keywords: ["afrique du sud", "south africa", "johannesburg", "jnb", "cape town", "cpt", "kruger", "pretoria", "blyde", "eswatini", "swaziland", "hluhluwe", "robben island", "stellenbosch", "durban", "zululand", "zoulou", "pilgrim", "soweto"],
+                codes: ["za", "jnb", "cpt", "dur", "za25", "za26"]
+            },
+            {
+                pays: "Espagne",
+                region: "Andalousie",
+                circuit_default: "Joyaux Mauresques & Séville",
+                keywords: ["andalousie", "andalucia", "séville", "seville", "grenade", "granada", "cordoue", "cordoba", "malaga", "ronda", "alhambra", "giralda"],
+                codes: ["es", "svq", "agp", "grx"]
+            },
+            {
+                pays: "Italie",
+                region: "Latium / Rome",
+                circuit_default: "Rome Antique & Vatican",
+                keywords: ["rome", "roma", "vatican", "colisée", "colosseo", "latium", "lazio", "trastevere"],
+                codes: ["it", "fco", "cia"]
+            },
+            {
+                pays: "Maroc",
+                region: "Villes Impériales & Sud",
+                circuit_default: "Villes Impériales & Dunes du Sahara",
+                keywords: ["maroc", "morocco", "marrakech", "fès", "fes", "ouarzazate", "merzouga", "rabat", "meknès", "meknes", "casablanca", "erg chebbi", "aït ben haddou"],
+                codes: ["ma", "rak", "fez", "cmn"]
+            },
+            {
+                pays: "Portugal",
+                region: "Madère",
+                circuit_default: "L'Île aux Fleurs & Levadas",
+                keywords: ["madère", "madere", "madeira", "funchal", "porto moniz", "santana", "cabo girao", "levada"],
+                codes: ["pt", "fnc", "lis", "opo"]
+            },
+            {
+                pays: "Costa Rica",
+                region: "Parcs & Volcans",
+                circuit_default: "Sanctuaires de la Biodiversité",
+                keywords: ["costa rica", "san josé", "san jose", "arenal", "monteverde", "tortuguero", "manuel antonio"],
+                codes: ["cr", "sjo"]
+            },
+            {
+                pays: "Norvège",
+                region: "Fjords de l'Ouest",
+                circuit_default: "Route des Fjords & Cascades",
+                keywords: ["norvège", "norvege", "norway", "oslo", "flåm", "flam", "bergen", "geiranger", "sognefjord"],
+                codes: ["no", "osl", "bgo"]
+            },
+            {
+                pays: "Japon",
+                region: "Honshu",
+                circuit_default: "Trésors Traditionnels & Tokyo",
+                keywords: ["japon", "japan", "tokyo", "kyoto", "osaka", "nara", "hiroshima", "fuji"],
+                codes: ["jp", "hnd", "nrt", "kix"]
+            }
+        ],
+
+        // Détection prioritaire du pays, de la région et du circuit
+        detectDestinationClient(sourceRef, rawText, title) {
+            const filenameClean = (sourceRef || '').toLowerCase().replace(/[\._\-]+/g, ' ');
+            const titleClean = (title || '').toLowerCase();
+            const firstLines = rawText.split('\n').slice(0, 8).map(l => l.trim().toLowerCase()).join(' ');
+
+            // Priorité 1 : Nom du fichier
+            for (const dest of this.destinationsKB) {
+                if (dest.keywords.some(kw => filenameClean.includes(kw))) {
+                    let circuit = dest.circuit_default;
+                    const mRoute = filenameClean.match(/de\s+([a-z\s]{3,20})\s+[àa]\s+([a-z\s]{3,20})/i);
+                    if (mRoute) circuit = `De ${mRoute[1].trim()} à ${mRoute[2].trim()}`;
+                    return { pays: dest.pays, region: dest.region, circuit: circuit };
+                }
+                for (const code of dest.codes) {
+                    const reg = new RegExp(`\\b${code}\\b|\\b${code}\\d+`, 'i');
+                    if (reg.test(filenameClean)) {
+                        let circuit = dest.circuit_default;
+                        const mRoute = filenameClean.match(/de\s+([a-z\s]{3,20})\s+[àa]\s+([a-z\s]{3,20})/i);
+                        if (mRoute) circuit = `De ${mRoute[1].trim()} à ${mRoute[2].trim()}`;
+                        return { pays: dest.pays, region: dest.region, circuit: circuit };
+                    }
+                }
+            }
+
+            // Priorité 2 : Titre du document et 5 premières lignes
+            const topContext = `${titleClean} ${firstLines}`;
+            for (const dest of this.destinationsKB) {
+                if (dest.keywords.some(kw => topContext.includes(kw))) {
+                    let circuit = dest.circuit_default;
+                    const mCirc = topContext.match(/circuit\s+(?:de\s+)?([^\n\r\|\.]{4,60}?)(?:au\s+départ|\d+j|\n|$)/i);
+                    if (mCirc) circuit = mCirc[1].trim();
+                    return { pays: dest.pays, region: dest.region, circuit: circuit };
+                }
+            }
+
+            // Priorité 3 : Analyse globale du texte
+            const lowerFull = rawText.toLowerCase();
+            let bestMatch = null;
+            let bestScore = 0;
+            for (const dest of this.destinationsKB) {
+                const score = dest.keywords.reduce((acc, kw) => acc + (lowerFull.split(kw).length - 1), 0);
+                if (score > bestScore && score >= 2) {
+                    bestScore = score;
+                    bestMatch = dest;
+                }
+            }
+            if (bestMatch) {
+                return { pays: bestMatch.pays, region: bestMatch.region, circuit: bestMatch.circuit_default };
+            }
+
+            return { pays: "Destination Internationale", region: "Circuit Découverte", circuit: "Circuit Découverte" };
+        },
+
+        // Détection fine de la tarification par groupe ("Base 20", "Base 30", "Base 40" et suppléments)
+        extractBasePricingClient(rawText, rawLines) {
+            const basePrices = {};
+            const supplements = {};
+            let taxesAeroPers = 0;
+
+            // Détection des taxes d'aéroport
+            const regexTaxes = [
+                /taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                /taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                /dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d['’]\s*)?a[eé]ro/i
+            ];
+            for (const rx of regexTaxes) {
+                const mTax = rawText.match(rx);
+                if (mTax) {
+                    const valT = parseFloat(mTax[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                    if (valT >= 15 && valT <= 1500) {
+                        taxesAeroPers = valT;
+                        break;
+                    }
+                }
+            }
+
+            // 1. Analyse des tableaux et grilles tarifaires
+            for (const line of rawLines) {
+                if (line.includes('|')) {
+                    const parts = line.split('|').map(p => p.trim());
+                    for (let pIdx = 0; pIdx < parts.length; pIdx++) {
+                        const cell = parts[pIdx];
+                        const mBase = cell.match(/base\s*(\d{2})/i);
+                        if (mBase) {
+                            const bNum = parseInt(mBase[1]);
+                            if (pIdx + 1 < parts.length) {
+                                const mPr = parts[pIdx + 1].match(/(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i);
+                                if (mPr) {
+                                    const pVal = parseFloat(mPr[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                                    if (pVal >= 300 && pVal <= 50000) basePrices[bNum] = pVal;
+                                }
+                            }
+                        }
+                    }
+                }
+                const mBaseLine = line.match(/base\s*(\d{2})(?:\s*participants?|\s*personnes?)?\s*[:\-\|]?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i);
+                if (mBaseLine) {
+                    const bNum = parseInt(mBaseLine[1]);
+                    const pVal = parseFloat(mBaseLine[2].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                    if (pVal >= 300 && pVal <= 50000) basePrices[bNum] = pVal;
+                }
+            }
+
+            // 2. Détection des suppléments de base (ex: "Supplément base 20/24 : + 215 €")
+            const rxSupp = /suppl[eé]ment\s+base\s*(\d{2})(?:\/\d{2})?(?:\s*participants?)?\s*[:\-]?\s*\+?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/gi;
+            let mSupp;
+            while ((mSupp = rxSupp.exec(rawText)) !== null) {
+                const bNum = parseInt(mSupp[1]);
+                const sVal = parseFloat(mSupp[2].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                if (sVal > 0 && sVal < 3000) supplements[bNum] = sVal;
+            }
+
+            // 3. Calcul du prix Base 20 si basé sur Base 40 + supplément
+            if (!basePrices[20]) {
+                if (basePrices[40] && supplements[20]) {
+                    basePrices[20] = basePrices[40] + supplements[20];
+                } else if (basePrices[30] && supplements[20]) {
+                    basePrices[20] = basePrices[30] + supplements[20];
+                }
+            }
+
+            // 4. Déterminer la base retenue
+            let baseRetenue = 20;
+            let prixParPers = 0;
+            if (basePrices[20]) {
+                baseRetenue = 20;
+                prixParPers = basePrices[20];
+            } else if (Object.keys(basePrices).length > 0) {
+                const sortedBases = Object.keys(basePrices).map(Number).sort((a,b) => a - b);
+                baseRetenue = sortedBases[0];
+                prixParPers = basePrices[baseRetenue];
+            }
+
+            return {
+                base_retenue: baseRetenue,
+                prix_par_personne: prixParPers,
+                base_disponibles: basePrices,
+                supplements: supplements,
+                taxes_aeroport_pers: taxesAeroPers
+            };
+        },
+
         // Parser textuel intelligent avec priorisation sémantique
         parseOfferText(rawText, offerId, sourceType, sourceRef) {
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
@@ -413,6 +619,9 @@ document.addEventListener('alpine:init', () => {
 
             // 1. Titre
             const titre = lines[0] ? lines[0].substring(0, 80) : `Offre extraite (${sourceRef})`;
+
+            // 1.bis. Reconnaissance prioritaire du Pays, de la Région et du Circuit
+            const destInfo = this.detectDestinationClient(sourceRef, rawText, titre);
 
             // 2. Vendeur
             let vendeurNom = 'Organisateur non identifié';
@@ -437,10 +646,16 @@ document.addEventListener('alpine:init', () => {
                 if (nb >= 1 && nb <= 100) nbPersonnes = nb;
             }
 
-            // 5. Prix et devises avec détection prix par personne
+            // 5. Prix et devises avec détection prioritaire par groupe "Base 20" (ou 30, 40)
+            const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const groupPricing = this.extractBasePricingClient(rawText, rawLines);
             let prixTotal = 0;
             let isPricePerPerson = false;
-            const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            if (groupPricing.prix_par_personne > 0) {
+                prixTotal = groupPricing.prix_par_personne;
+                isPricePerPerson = true;
+            }
 
             // Stratégie 1 : Tableaux structurés ou lignes avec délimiteur |
             for (let i = 0; i < rawLines.length; i++) {
@@ -651,29 +866,33 @@ document.addEventListener('alpine:init', () => {
             else if (lower.includes('non remboursable')) flex = 'Stricte';
 
             // Détection des taxes d'aéroport pour voyage aérien
-            let taxesAeroPers = 0;
+            let taxesAeroPers = groupPricing.taxes_aeroport_pers || 0;
             let taxesAeroStatut = 'non_applicable';
             if (estVol) {
-                const regexList = [
-                    /taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
-                    /taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
-                    /dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d['’]\s*)?a[eé]ro/i,
-                    /redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i
-                ];
-                for (const reg of regexList) {
-                    const m = rawText.match(reg);
-                    if (m) {
-                        const val = parseFloat(m[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
-                        if (val >= 15 && val <= 1500) {
-                            taxesAeroPers = val;
-                            taxesAeroStatut = 'en_supplement';
-                            break;
+                if (taxesAeroPers > 0) {
+                    taxesAeroStatut = 'en_supplement';
+                } else {
+                    const regexList = [
+                        /taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport[a-z]*(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                        /taxes\s+a[eé]riennes?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i,
+                        /dont\s+(\d+[\s\.,]?\d*)\s*(?:€|EUR)\s+de\s+taxes\s+(?:d['’]\s*)?a[eé]ro/i,
+                        /redevances\s+a[eé]roportuaires?(?:[^\n\d€]{0,50}?)(?:à|de|:)?\s*(\d+[\s\.,]?\d*)\s*(?:€|EUR)/i
+                    ];
+                    for (const reg of regexList) {
+                        const m = rawText.match(reg);
+                        if (m) {
+                            const val = parseFloat(m[1].replace(/[^\d,\.]/g, '').replace(',', '.'));
+                            if (val >= 15 && val <= 1500) {
+                                taxesAeroPers = val;
+                                taxesAeroStatut = 'en_supplement';
+                                break;
+                            }
                         }
                     }
-                }
-                if (taxesAeroPers === 0) {
-                    if (/taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport|taxes\s+a[eé]riennes/i.test(rawText)) {
-                        taxesAeroStatut = 'incluses_non_ventilees';
+                    if (taxesAeroPers === 0) {
+                        if (/taxes\s+(?:d['’]\s*|d\s+)?a[eé]roport|taxes\s+a[eé]riennes/i.test(rawText)) {
+                            taxesAeroStatut = 'incluses_non_ventilees';
+                        }
                     }
                 }
             }
@@ -696,6 +915,12 @@ document.addEventListener('alpine:init', () => {
                 titre: titre,
                 source_origine_type: sourceType,
                 source_reference: sourceRef,
+                destination_pays: destInfo.pays,
+                destination_region: destInfo.region,
+                circuit_nom: destInfo.circuit,
+                base_participants: groupPricing.base_retenue,
+                base_disponibles: groupPricing.base_disponibles,
+                base_details: `Base ${groupPricing.base_retenue} personnes`,
                 date_depart: dateDep,
                 date_retour: dateRet,
                 duree_jours: jours,
@@ -876,6 +1101,24 @@ document.addEventListener('alpine:init', () => {
             offer.erreurs_conformite = erreurs;
             offer.nombre_prestations_incluses = nbPrest;
             offer.contient_hebergement = aHeb;
+        },
+
+        // Changement dynamique de la base de comparaison groupe (ex: Base 20 / Base 30 / Base 40)
+        setComparisonBase(baseNum) {
+            this.globalBaseComparison = baseNum;
+            this.offers.forEach(off => {
+                if (off.base_disponibles && off.base_disponibles[baseNum]) {
+                    const prixBase = off.base_disponibles[baseNum];
+                    off.base_participants = baseNum;
+                    off.prix.prix_par_personne = Math.round(prixBase);
+                    off.prix.nombre_personnes = baseNum;
+                    off.prix.prix_total_annonce = Math.round(prixBase * baseNum);
+                    this.recalculatePrices(off);
+                }
+            });
+            if (this.comparisonResult) {
+                this.triggerComparison();
+            }
         },
 
         validateAllOffers() {

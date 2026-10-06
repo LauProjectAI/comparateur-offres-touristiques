@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comparateur Indépendant d'Offres Touristiques</title>
-    <!-- Tailwind CSS pour un design moderne, épuré et responsive -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,17 +25,32 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="/static/css/custom.css">
-    <!-- Leaflet pour la cartographie interactive des circuits -->
+    <link rel="stylesheet" href="css/custom.css">
+    
+    <!-- Bibliothèques d'extraction côté client (Sans aucun serveur) -->
+    <!-- 1. PDF.js pour lire les PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- 2. JSZip pour décompression ultra-rapide des documents Office (.docx) sans saturer la mémoire -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- 3. Mammoth pour lire les fichiers Word .docx -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- 4. SheetJS pour lire les fichiers Excel .xlsx -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- 5. Leaflet pour la cartographie interactive des circuits -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    <!-- Données d'itinéraires géographiques -->
-    <script src="/static/js/itineraries.js"></script>
-    <!-- Alpine.js pour la réactivité fluide -->
+    <!-- Données d'exemple et d'itinéraires embarquées -->
+    <script src="js/sample-data.js"></script>
+    <script src="js/itineraries.js"></script>
+    <!-- Moteur de comparaison et d'audit en JavaScript pur -->
+    <script src="js/app.js"></script>
+    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Script d'application -->
-    <script src="/static/js/app.js"></script>
 </head>
 <body class="dark-premium text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 antialiased" x-data="comparatorApp()">
 
@@ -49,7 +64,7 @@
                 <div>
                     <h1 class="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
                         Comparateur d'Offres Touristiques
-                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-800 font-medium">Audit Indépendant</span>
+                        <span class="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">100% Client • GitHub Pages</span>
                     </h1>
                     <p class="text-xs text-slate-400">Outil de décision pour voyageurs & conseillers en voyages • Traçabilité certifiée</p>
                 </div>
@@ -167,79 +182,65 @@
                 </div>
             </div>
 
-            <!-- Modalités d'ajout d'offres : Fichier, Lien Web ou Manuel -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+            <!-- Modalités d'ajout d'offres : Fichier ou Manuel -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                 
-                <!-- 1. Déposer un fichier (PDF, Word, Excel) -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
+                <!-- 1. Déposer un fichier (PDF, Word, Excel) - 100% exécuté dans le navigateur -->
+                <div class="bento-card p-5 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
                             <span class="text-base text-brand-700">📄</span>
-                            <span>Importer un fichier</span>
+                            <span>Importer un fichier (Traitement 100% local dans votre navigateur)</span>
                         </div>
-                        <p class="text-xs text-slate-500 mb-3">Accepte les formats <strong>PDF, Word (.docx) et Excel (.xlsx)</strong>. Contenu traité comme données pures.</p>
+                        <p class="text-xs text-slate-400 mb-3">Glissez ou sélectionnez un fichier <strong class="text-slate-200">PDF, Word (.docx) ou Excel (.xlsx)</strong>. Vos données restent privées sur votre ordinateur sans aucun serveur tiers.</p>
                         
-                        <label class="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer block transition relative"
+                        <label class="border-2 border-dashed rounded-lg p-5 text-center cursor-pointer block transition relative"
                                :class="isDragging ? 'border-cyan-500 bg-cyan-950/40 ring-2 ring-cyan-500/40' : 'border-slate-800 hover:border-cyan-500/60 bg-slate-950/70 hover:bg-slate-900/70'"
                                @dragover.prevent="isDragging = true"
                                @dragleave.prevent="isDragging = false"
                                @drop.prevent="handleFileDrop($event)">
                             <div x-show="!uploading" class="space-y-1">
-                                <span class="text-xs font-bold text-slate-200 block">Choisir ou glisser un fichier</span>
-                                <span class="text-[11px] text-slate-500 block">PDF, Word (.docx) ou Excel (.xlsx)</span>
+                                <span class="text-2xl block mb-1">📁</span>
+                                <span class="text-xs font-bold text-slate-200 block">Glisser-déposer ou cliquer pour choisir un fichier</span>
+                                <span class="text-[11px] text-slate-400 block">Brochures PDF, Devis Word (.docx), Tableurs Excel (.xlsx)</span>
                             </div>
-                            <div x-show="uploading" class="py-1 flex items-center justify-center space-x-2">
-                                <span class="text-xs font-bold text-brand-700 animate-pulse">Extraction en cours...</span>
+                            <div x-show="uploading" class="py-2 flex flex-col items-center justify-center space-y-2">
+                                <svg class="animate-spin h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="text-xs font-bold text-brand-800" x-text="uploadProgressText || 'Extraction en cours...'"></span>
                             </div>
                             <input type="file" @change="handleFileUpload($event)" accept=".pdf,.docx,.xlsx,.doc,.xls" class="hidden">
                         </label>
                     </div>
 
-                    <!-- Télécharger des exemples réels de test -->
-                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                        <span>Fichiers de test disponibles : </span>
-                        <a href="/static/samples/offre_andalousie_culture.pdf" download class="text-brand-700 underline font-medium mr-1">PDF</a>|
-                        <a href="/static/samples/offre_maroc_imperiale.docx" download class="text-brand-700 underline font-medium mx-1">Word</a>|
-                        <a href="/static/samples/devis_madere_nature.xlsx" download class="text-brand-700 underline font-medium ml-1">Excel</a>
+                    <!-- Fichiers de test disponibles -->
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+                        <span>Fichiers exemples téléchargeables pour test :</span>
+                        <div class="space-x-2 font-medium">
+                            <a href="samples/offre_andalousie_culture.pdf" download class="text-cyan-400 hover:text-cyan-300 font-semibold underline">PDF</a>
+                            <a href="samples/offre_maroc_imperiale.docx" download class="text-cyan-400 hover:text-cyan-300 font-semibold underline">Word</a>
+                            <a href="samples/devis_madere_nature.xlsx" download class="text-cyan-400 hover:text-cyan-300 font-semibold underline">Excel</a>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 2. Importer une page Web via URL -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
-                            <span class="text-base text-brand-700">🔗</span>
-                            <span>Importer un lien Internet</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mb-3">Extraction sécurisée depuis l'adresse Web d'un voyagiste ou d'une agence (protection SSRF).</p>
-                        
-                        <div class="flex gap-2">
-                            <input type="url" x-model="urlInput" placeholder="https://exemple.com/sejour..." class="flex-grow text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
-                            <button @click="extractFromUrl()" :disabled="loading || !urlInput.trim()" class="bg-brand-700 hover:bg-brand-800 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-                                Extraire
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-400">
-                        Les textes sont assainis et structurés sans exécution d'instructions.
-                    </div>
-                </div>
-
-                <!-- 3. Formulaire manuel / Offre vierge -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-800 p-4 flex flex-col justify-between">
+                <!-- 2. Formulaire manuel / Offre personnalisée -->
+                <div class="bento-card p-5 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center space-x-2 text-white font-bold text-sm mb-1">
                             <span class="text-base text-brand-700">✍️</span>
                             <span>Ajout manuel structuré</span>
                         </div>
-                        <p class="text-xs text-slate-500 mb-3">Créez une offre personnalisée vierge à remplir via les formulaires ci-dessous.</p>
+                        <p class="text-xs text-slate-400 mb-4">Créez une offre personnalisée vierge pour saisir ou coller directement vos informations dans les formulaires.</p>
                         
-                        <button @click="addManualOffer()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-200 border border-slate-300 font-semibold text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5">
-                            <span>+ Ajouter une offre manuelle</span>
+                        <button @click="addManualOffer()" class="w-full bg-slate-800/80 hover:bg-slate-700 text-slate-100 border border-slate-700 font-bold text-xs py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                            <span>+ Ajouter une nouvelle offre manuelle</span>
                         </button>
                     </div>
-                    <div class="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                        Total actuel : <strong x-text="offers.length"></strong> offre(s) dans le comparateur
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+                        Total des offres actuellement chargées : <strong x-text="offers.length"></strong>
                     </div>
                 </div>
             </div>
@@ -300,7 +301,7 @@
                             </div>
 
                             <!-- Informations Générales & Traçabilité -->
-                            <div class="bento-cell p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 border-slate-800">
+                            <div class="bento-cell p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-slate-800">
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Titre de l'offre</label>
                                     <input type="text" x-model="currentOffer.titre" class="w-full text-xs font-bold bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 focus:ring-1 focus:ring-cyan-500">
@@ -308,9 +309,38 @@
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 mb-1">Source / Traçabilité</label>
                                     <div class="text-xs bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
-                                        <span class="text-slate-600 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
-                                        <span class="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
+                                        <span class="text-slate-400 truncate" x-text="currentOffer.source_reference || 'Saisie directe'"></span>
+                                        <span class="text-[10px] bg-sky-950 text-sky-300 border border-sky-800/50 px-1.5 py-0.5 rounded uppercase font-bold" x-text="currentOffer.source_origine_type"></span>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Reconnaissance prioritaire Pays, Région, Circuit & Base Participants -->
+                            <div class="bento-cell p-4 mb-5 grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/80 border border-slate-800">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">🌍 Pays identifié</label>
+                                    <input type="text" x-model="currentOffer.destination_pays" class="w-full text-xs font-extrabold bg-slate-900 border border-cyan-500/40 text-cyan-300 rounded-lg p-2 focus:ring-1 focus:ring-cyan-400" placeholder="ex: Afrique du Sud">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">📍 Région / Zone</label>
+                                    <input type="text" x-model="currentOffer.destination_region" class="w-full text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2" placeholder="ex: Mpumalanga / Cap">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">🗺️ Tracé Circuit précis</label>
+                                    <input type="text" x-model="currentOffer.circuit_nom" class="w-full text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2" placeholder="ex: De Johannesburg au Cap">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">👥 Base tarification groupe</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <template x-for="b in [20, 30, 40]" :key="b">
+                                            <button type="button" @click="currentOffer.base_participants = b; setComparisonBase(b)" 
+                                                    :class="currentOffer.base_participants === b ? 'bg-cyan-600 text-white font-extrabold shadow-sm' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'"
+                                                    class="flex-1 py-1.5 rounded-lg text-xs transition">
+                                                Base <span x-text="b"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500 block mt-1" x-text="currentOffer.base_details || `Base ${currentOffer.base_participants} personnes`"></span>
                                 </div>
                             </div>
 
@@ -762,13 +792,28 @@
         <!-- ======================================================== -->
         <section x-show="step === 3 && comparisonResult" class="transition-smooth">
             
-            <!-- Barre d'actions du rapport -->
+            <!-- Barre d'actions du rapport avec sélecteur de Base Groupe -->
             <div class="mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
-                <button @click="step = 2" class="bento-cell px-4 py-2 text-slate-300 hover:text-white border-slate-700 text-xs font-bold transition shadow-sm">
-                    ← Modifier ou corriger les offres
-                </button>
+                <div class="flex items-center gap-3">
+                    <button @click="step = 2" class="bento-cell px-4 py-2 text-slate-300 hover:text-white border-slate-700 text-xs font-bold transition shadow-sm">
+                        ← Modifier ou corriger les offres
+                    </button>
+                    <!-- Sélecteur rapide de Base Groupe pour le comparatif -->
+                    <div class="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-1 gap-1">
+                        <span class="text-[11px] font-bold text-slate-400 px-2 flex items-center gap-1">
+                            <span>👥</span> Base tarifaire :
+                        </span>
+                        <template x-for="b in [20, 30, 40]" :key="b">
+                            <button type="button" @click="setComparisonBase(b)"
+                                    :class="globalBaseComparison === b ? 'bg-cyan-600 text-white font-extrabold shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-900'"
+                                    class="px-2.5 py-1 text-xs rounded-lg transition">
+                                Base <span x-text="b"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
                 <div class="flex items-center space-x-3">
-                    <span class="text-xs text-slate-500 font-medium">Voyage : <strong class="uppercase text-slate-900" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
+                    <span class="text-xs text-slate-400 font-medium">Voyage : <strong class="uppercase text-cyan-300" x-text="comparisonResult ? comparisonResult.type_voyage : ''"></strong></span>
                     <button @click="printReport()" class="bento-cell px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                         <span>🖨️ Imprimer / Export PDF</span>
                     </button>
@@ -965,9 +1010,12 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <span class="text-lg">🗺️</span>
-                            <h3 class="text-base font-bold text-slate-900" x-text="itineraryData ? itineraryData.title : 'Carte des Circuits'"></h3>
+                            <h3 class="text-base font-bold text-white">
+                                <span class="text-cyan-400" x-text="offers[0]?.destination_pays ? `${offers[0].destination_pays} : ` : ''"></span>
+                                <span x-text="offers[0]?.circuit_nom || (itineraryData ? itineraryData.title : 'Carte des Circuits')"></span>
+                            </h3>
                         </div>
-                        <p class="text-xs text-slate-500 mt-0.5">Visualisation géographique comparative des étapes, des tracés routiers, des vols intérieurs et des hébergements.</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Visualisation géographique comparative des étapes, des tracés routiers, des vols intérieurs et des hébergements.</p>
                     </div>
 
                     <!-- Sélecteur de filtres circuits -->
@@ -1344,7 +1392,7 @@
     <!-- Footer Neutre & Déontologie -->
     <footer class="bg-slate-950/90 border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 no-print mt-auto">
         <div class="max-w-7xl mx-auto px-4 space-y-1">
-            <p class="font-semibold text-slate-700">Comparateur Indépendant d'Offres Touristiques • Conçu pour Voyageurs & Conseillers en Voyages</p>
+            <p class="font-semibold text-slate-700">Comparateur Indépendant d'Offres Touristiques • Hébergé sur GitHub Pages (100% Client)</p>
             <p>Respect strict de la déontologie de l'information : séparation des sources, aucune invention de données ou d'avis, neutralité économique.</p>
         </div>
     </footer>
